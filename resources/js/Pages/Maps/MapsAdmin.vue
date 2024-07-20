@@ -16,6 +16,7 @@ export default defineComponent({
             rawHarga: 0,
             biaya: {
                 harga: "",
+                harga_modal: "",
             },
         };
     },
@@ -25,6 +26,7 @@ export default defineComponent({
             const input = event.target.value;
             const numericValue = parseInt(input.replace(/\D/g, ""), 10) || 0;
             this.biaya.harga = numericValue.toString();
+            this.biaya.harga_modal = numericValue.toString();
             event.target.value = "Rp. " + numericValue.toLocaleString("id-ID");
         },
     },
@@ -101,7 +103,7 @@ export default defineComponent({
                 name_agent: null,
                 name_customer: null,
                 name_satuan: null,
-                biaya: [{ nama: null, harga: "" }],
+                biaya: [{ nama: null, harga: "", harga_modal: "" }],
             },
         ]);
 
@@ -164,6 +166,7 @@ export default defineComponent({
                         biaya: satuan.biaya.map((biaya) => ({
                             name_biaya: biaya.name_biaya,
                             harga: biaya.harga,
+                            harga_modal: biaya.harga_modal,
                         })),
                     })),
                     showForm: true,
@@ -280,6 +283,7 @@ export default defineComponent({
                         biaya: satuan.biaya.map((biaya) => ({
                             name_biaya: biaya.name_biaya,
                             harga: biaya.harga,
+                            harga_modal: biaya.harga_modal,
                         })),
                     })),
                 }));
@@ -341,7 +345,7 @@ export default defineComponent({
         const tambahItem = () => {
             formInput.value.push({
                 name_satuan: null,
-                biaya: [{ nama: "", harga: "" }],
+                biaya: [{ nama: "", harga: "", harga_modal: "" }],
             });
         };
 
@@ -355,6 +359,7 @@ export default defineComponent({
             formInput.value[index].biaya.push({
                 nama: "",
                 harga: "",
+                harga_modal: "",
             });
         };
 
@@ -369,7 +374,7 @@ export default defineComponent({
         const tambahItemBiaya = () => {
             selectedMarker.value.satuan.push({
                 name_satuan: null,
-                biaya: [{ name_biaya: "", harga: "" }],
+                biaya: [{ name_biaya: "", harga: "", harga_modal: "" }],
             });
         };
 
@@ -383,6 +388,7 @@ export default defineComponent({
             selectedMarker.value.satuan[index].biaya.push({
                 name_biaya: "",
                 harga: "",
+                harga_modal: "",
             });
         };
 
@@ -420,6 +426,7 @@ export default defineComponent({
                                     return {
                                         name_biaya: biaya.nama,
                                         harga: biaya.harga,
+                                        harga_modal: biaya.harga_modal,
                                     };
                                 }),
                             };
@@ -451,6 +458,7 @@ export default defineComponent({
                                         {
                                             nama: "",
                                             harga: "",
+                                            harga_modal: "",
                                         },
                                     ],
                                 },
@@ -784,11 +792,11 @@ export default defineComponent({
                 class="absolute z-10 inset-0 flex items-center justify-center 2xl:pl-[40%] text-xs pt-[86px] md:pt-24 lg:pt-8"
             >
                 <div
-                    class="bg-white w-96 md:w-[1024px] lg:w-[512px] h-auto rounded-md p-8 relative shadow-xl mx-4 md:mx-24"
+                    class="bg-white w-96 md:w-[1024px] lg:w-[512px] xl:w-[660px] h-auto rounded-xl p-8 relative shadow-xl mx-4 md:mx-24"
                 >
                     <form @submit.prevent="saveFormData">
                         <h1 class="pb-4 w-[90%]">Alamat : {{ address }}</h1>
-                        <div class="overflow-y-scroll max-h-96">
+                        <div class="overflow-y-scroll max-h-96 pr-4">
                             <div class="pb-2">
                                 <label for="name_penerima" class="pb-2"
                                     >Nama Penerima:</label
@@ -806,41 +814,44 @@ export default defineComponent({
                                     Nama Penerima tidak boleh kosong
                                 </p>
                             </div>
-                            <div class="w-full pb-2">
-                                <label for="name_agent" class="pb-2"
-                                    >Nama Agent:</label
-                                >
-                                <v-select
-                                    id="name_agent"
-                                    :options="agent"
-                                    v-model="formInput.name_agent"
-                                    class="w-full"
-                                />
-                                <p
-                                    v-if="!formInput.name_agent"
-                                    class="text-red-500"
-                                >
-                                    Agent tidak boleh kosong
-                                </p>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="w-full pb-2">
+                                    <label for="name_agent" class="pb-2"
+                                        >Nama Agent:</label
+                                    >
+                                    <v-select
+                                        id="name_agent"
+                                        :options="agent"
+                                        v-model="formInput.name_agent"
+                                        class="w-full"
+                                    />
+                                    <p
+                                        v-if="!formInput.name_agent"
+                                        class="text-red-500"
+                                    >
+                                        Agent tidak boleh kosong
+                                    </p>
+                                </div>
+                                <div class="w-full pb-2">
+                                    <label for="name_customer" class="pb-2"
+                                        >Nama Customer:</label
+                                    >
+                                    <v-select
+                                        id="name_customer"
+                                        :options="customer"
+                                        v-model="formInput.name_customer"
+                                        class="w-full"
+                                    />
+                                    <p
+                                        v-if="!formInput.name_customer"
+                                        class="text-red-500"
+                                    >
+                                        Customer tidak boleh kosong
+                                    </p>
+                                </div>
                             </div>
-                            <div class="w-full pb-2">
-                                <label for="name_customer" class="pb-2"
-                                    >Nama Customer:</label
-                                >
-                                <v-select
-                                    id="name_customer"
-                                    :options="customer"
-                                    v-model="formInput.name_customer"
-                                    class="w-full"
-                                />
-                                <p
-                                    v-if="!formInput.name_customer"
-                                    class="text-red-500"
-                                >
-                                    Customer tidak boleh kosong
-                                </p>
-                            </div>
-                            <div class="">
+
+                            <div>
                                 <div
                                     class="pb-2"
                                     v-for="(item, index) in formInput"
@@ -867,7 +878,7 @@ export default defineComponent({
                                                     Satuan tidak boleh kosong
                                                 </p>
                                             </div>
-                                            <div class="flex pt-2 gap-2 pr-2">
+                                            <div class="flex pt-2 gap-2">
                                                 <button
                                                     type="button"
                                                     class="btn bg-green-500 text-white hover:bg-green-700"
@@ -895,7 +906,7 @@ export default defineComponent({
                                                     class="w-full flex gap-2"
                                                 >
                                                     <div
-                                                        class="lg:grid grid-cols-2 gap-4"
+                                                        class="lg:grid grid-cols-2 xl:grid-cols-3 gap-4"
                                                     >
                                                         <div class="pb-2">
                                                             <label
@@ -944,8 +955,7 @@ export default defineComponent({
                                                                     '-' +
                                                                     biayaIndex
                                                                 "
-                                                                class=""
-                                                                >Harga Biaya
+                                                                >Harga Jual
                                                                 {{
                                                                     biayaIndex +
                                                                     1
@@ -971,14 +981,53 @@ export default defineComponent({
                                                                 "
                                                                 class="text-red-500"
                                                             >
-                                                                Harga Biaya
+                                                                Harga Jual tidak
+                                                                boleh kosong
+                                                            </p>
+                                                        </div>
+                                                        <!-- Harga Modal -->
+                                                        <div class="pb-2">
+                                                            <label
+                                                                :for="
+                                                                    'biaya' +
+                                                                    index +
+                                                                    '-' +
+                                                                    biayaIndex
+                                                                "
+                                                                >Harga Modal
+                                                                {{
+                                                                    biayaIndex +
+                                                                    1
+                                                                }}:</label
+                                                            >
+                                                            <input
+                                                                :id="
+                                                                    'biaya' +
+                                                                    index +
+                                                                    '-' +
+                                                                    biayaIndex
+                                                                "
+                                                                v-model="
+                                                                    biaya.harga_modal
+                                                                "
+                                                                class="w-full rounded-lg text-xs"
+                                                                placeholder="isi Nama Harga"
+                                                            />
+
+                                                            <p
+                                                                v-if="
+                                                                    !biaya.harga_modal
+                                                                "
+                                                                class="text-red-500"
+                                                            >
+                                                                Harga Modal
                                                                 tidak boleh
                                                                 kosong
                                                             </p>
                                                         </div>
                                                     </div>
                                                     <div
-                                                        class="flex gap-2 pt-2 pr-2 lg:hidden"
+                                                        class="flex gap-2 pt-2 lg:hidden"
                                                     >
                                                         <button
                                                             type="button"
@@ -1006,7 +1055,7 @@ export default defineComponent({
                                                 </div>
                                             </div>
                                             <div
-                                                class="gap-2 pt-2 pr-2 hidden lg:flex"
+                                                class="gap-2 pt-2 hidden lg:flex"
                                             >
                                                 <button
                                                     type="button"
@@ -1083,7 +1132,7 @@ export default defineComponent({
                 style="display: none"
             >
                 <div
-                    class="bg-white w-full lg:w-[512px] max-h-[1024px] rounded-xl p-8 relative shadow-xl mx-4 md:mx-24"
+                    class="bg-white w-full lg:w-[512px] xl:w-[660px] max-h-[1024px] rounded-xl p-8 relative shadow-xl mx-4 md:mx-24"
                 >
                     <form @submit.prevent="editSaveFormData">
                         <!-- <div class="overflow-y-scroll max-h-[448px]"> -->
@@ -1147,7 +1196,7 @@ export default defineComponent({
                                                     Satuan tidak boleh kosong
                                                 </p>
                                             </div>
-                                            <div class="flex pt-2 gap-2 pr-2">
+                                            <div class="flex pt-2 gap-2">
                                                 <button
                                                     v-if="
                                                         matchingUser &&
@@ -1187,7 +1236,7 @@ export default defineComponent({
                                                     class="w-full flex gap-2"
                                                 >
                                                     <div
-                                                        class="w-full lg:grid grid-cols-2 gap-4"
+                                                        class="w-full lg:grid grid-cols-2 xl:grid-cols-3 gap-4"
                                                     >
                                                         <div class="pb-2">
                                                             <label
@@ -1245,8 +1294,7 @@ export default defineComponent({
                                                                     '-' +
                                                                     biayaIndex
                                                                 "
-                                                                class=""
-                                                                >Harga Biaya
+                                                                >Harga Jual
                                                                 {{
                                                                     biayaIndex +
                                                                     1
@@ -1280,14 +1328,60 @@ export default defineComponent({
                                                                 "
                                                                 class="text-red-500"
                                                             >
-                                                                Harga Biaya
+                                                                Harga Jual tidak
+                                                                boleh kosong
+                                                            </p>
+                                                        </div>
+                                                        <div class="pb-2">
+                                                            <label
+                                                                :for="
+                                                                    'biaya' +
+                                                                    index +
+                                                                    '-' +
+                                                                    biayaIndex
+                                                                "
+                                                                >Harga Modal
+                                                                {{
+                                                                    biayaIndex +
+                                                                    1
+                                                                }}:</label
+                                                            >
+                                                            <input
+                                                                :disabled="
+                                                                    !(
+                                                                        matchingUser &&
+                                                                        matchingUser.company.includes(
+                                                                            selectedMarker.name_company
+                                                                        )
+                                                                    )
+                                                                "
+                                                                :id="
+                                                                    'biaya' +
+                                                                    index +
+                                                                    '-' +
+                                                                    biayaIndex
+                                                                "
+                                                                v-model="
+                                                                    biayaItem.harga_modal
+                                                                "
+                                                                class="w-full rounded-lg text-xs"
+                                                                placeholder="isi Nama Harga"
+                                                                type="number"
+                                                            />
+                                                            <p
+                                                                v-if="
+                                                                    !biayaItem.harga_modal
+                                                                "
+                                                                class="text-red-500"
+                                                            >
+                                                                Harga Modal
                                                                 tidak boleh
                                                                 kosong
                                                             </p>
                                                         </div>
                                                     </div>
                                                     <div
-                                                        class="flex gap-2 pt-2 pr-2 lg:hidden"
+                                                        class="flex gap-2 pt-2 lg:hidden"
                                                     >
                                                         <button
                                                             v-if="
@@ -1327,7 +1421,7 @@ export default defineComponent({
                                                 </div>
                                             </div>
                                             <div
-                                                class="gap-2 pt-2 pr-2 hidden lg:flex"
+                                                class="gap-2 pt-2 hidden lg:flex"
                                             >
                                                 <button
                                                     v-if="

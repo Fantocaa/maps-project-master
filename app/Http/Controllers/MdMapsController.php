@@ -68,6 +68,7 @@ class MdMapsController extends Controller
                         return [
                             'name_biaya' => $biaya->biaya_name,
                             'harga' => $biaya->harga,
+                            'harga_modal' => $biaya->harga_modal,
                         ];
                     }),
                 ];
@@ -165,6 +166,7 @@ class MdMapsController extends Controller
                     }
 
                     $biaya->harga = $biayaData['harga'];
+                    $biaya->harga_modal = $biayaData['harga_modal'];
                     $biaya->save();
                 }
             }
@@ -224,6 +226,7 @@ class MdMapsController extends Controller
                                     $biaya->id_satuan = $satuan->id;
                                     $biaya->name_biaya = $biayaNameEntry->id;
                                     $biaya->harga = $biayaData['harga'];
+                                    $biaya->harga_modal = $biayaData['harga_modal'];
                                     $biaya->save();
                                 }
                             }
