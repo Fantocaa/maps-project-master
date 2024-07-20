@@ -117,31 +117,19 @@ class MdMapsController extends Controller
         // dd($request);
 
         $company = md_company::firstWhere('name_company', $request->name_company);
-<<<<<<< HEAD
         if (!$company) {
-=======
-        if (! $company) {
->>>>>>> 985726be07f53b939b4e788d034b1faad83877d6
             // Handle the case where the agent is not found
             return;
         }
 
         $agent = md_agent::firstWhere('name_agent', $request->name_agent);
-<<<<<<< HEAD
         if (!$agent) {
-=======
-        if (! $agent) {
->>>>>>> 985726be07f53b939b4e788d034b1faad83877d6
             // Handle the case where the agent is not found
             return;
         }
 
         $customer = md_company::firstWhere('name_company', $request->name_customer);
-<<<<<<< HEAD
         if (!$customer) {
-=======
-        if (! $customer) {
->>>>>>> 985726be07f53b939b4e788d034b1faad83877d6
             // Handle the case where the agent is not found
             return;
         }
@@ -212,7 +200,6 @@ class MdMapsController extends Controller
         $form = md_maps::find($request->id);
 
         // Tambahkan pengecekan untuk memastikan objek ditemukan sebelum memanipulasinya
-<<<<<<< HEAD
         if (!$form) {
             return response()->json(['error' => 'Data not found'], 404);
         }
@@ -222,13 +209,6 @@ class MdMapsController extends Controller
 
         // Tambahkan data satuan dan biaya yang baru
         if (!empty($request->satuan)) {
-=======
-        if (! $form) {
-            return response()->json(['error' => 'Data not found'], 404);
-        }
-
-        if (! empty($request->satuan)) {
->>>>>>> 985726be07f53b939b4e788d034b1faad83877d6
             foreach ($request->satuan as $satuanData) {
                 if (isset($satuanData['name_satuan'])) {
                     $satuan = md_satuan::firstWhere('name_satuan', $satuanData['name_satuan']);
@@ -238,7 +218,6 @@ class MdMapsController extends Controller
                                 $biayaNameEntry = md_biaya_name::firstWhere('biaya_name', $biayaData['name_biaya']);
 
                                 if ($biayaNameEntry) {
-<<<<<<< HEAD
                                     // Buat entri baru di md_biaya
                                     $biaya = new md_biaya();
                                     $biaya->id_maps = $form->id;
@@ -246,23 +225,6 @@ class MdMapsController extends Controller
                                     $biaya->name_biaya = $biayaNameEntry->id;
                                     $biaya->harga = $biayaData['harga'];
                                     $biaya->save();
-=======
-                                    // Mencari entri md_biaya yang sudah ada dengan id_maps, id_satuan, dan name_biaya yang sama
-                                    $existingBiaya = md_biaya::where('id_maps', $form->id)
-                                        ->where('id_satuan', $satuan->id)
-                                        ->where('name_biaya', $biayaNameEntry->id)
-                                        ->first();
-
-                                    if (! $existingBiaya) {
-                                        // Jika entri md_biaya tidak ditemukan, buat entri baru
-                                        $biaya = new md_biaya();
-                                        $biaya->id_maps = $form->id;
-                                        $biaya->id_satuan = $satuan->id;
-                                        $biaya->name_biaya = $biayaNameEntry->id;
-                                        $biaya->harga = $biayaData['harga'];
-                                        $biaya->save();
-                                    }
->>>>>>> 985726be07f53b939b4e788d034b1faad83877d6
                                 }
                             }
                         }
@@ -271,7 +233,6 @@ class MdMapsController extends Controller
             }
         }
 
-<<<<<<< HEAD
         // Perbarui catatan
         $form->notes = $request->notes;
         $form->save();
@@ -280,12 +241,6 @@ class MdMapsController extends Controller
     }
 
 
-=======
-        $form->notes = $request->notes;
-        $form->save();
-    }
-
->>>>>>> 985726be07f53b939b4e788d034b1faad83877d6
     public function delete_maps($id)
     {
         try {
@@ -331,11 +286,7 @@ class MdMapsController extends Controller
 
         $data = $response->json();
 
-<<<<<<< HEAD
         if (!empty($data['results'])) {
-=======
-        if (! empty($data['results'])) {
->>>>>>> 985726be07f53b939b4e788d034b1faad83877d6
             $address = $data['results'][0]['formatted_address'];
             // Hapus Plus Codes atau OLC dari alamat
             $plusCodeIndex = strpos($address, '+');

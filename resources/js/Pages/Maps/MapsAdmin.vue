@@ -76,39 +76,6 @@ export default defineComponent({
             }
         };
 
-<<<<<<< HEAD
-=======
-        // const getReverseGeocoding = (lat, lng) => {
-        //     return fetch(
-        //         `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=AIzaSyD2dASx5Zo68GSyZuPjUs-4SBLYGsn4OPQ`
-        //     )
-        //         .then((response) => response.json())
-        //         .then((data) => {
-        //             if (data.results && data.results.length > 0) {
-        //                 let address = data.results[0].formatted_address;
-
-        //                 // Hapus Plus Codes atau OLC dari alamat
-        //                 const plusCodeIndex = address.indexOf("+");
-        //                 if (plusCodeIndex !== -1) {
-        //                     const endOfPlusCode = address.indexOf(
-        //                         " ",
-        //                         plusCodeIndex
-        //                     );
-        //                     address = address.slice(endOfPlusCode).trim();
-        //                 }
-
-        //                 return address; // Kembalikan alamat
-        //             } else {
-        //                 return null; // Kembalikan null jika tidak ada hasil
-        //             }
-        //         })
-        //         .catch((error) => {
-        //             console.error(error);
-        //             return null; // Kembalikan null jika terjadi kesalahan
-        //         });
-        // };
-
->>>>>>> 985726be07f53b939b4e788d034b1faad83877d6
         const getReverseGeocoding = async (lat, lng) => {
             try {
                 const response = await axios.get("/api/reverse-geocode", {
@@ -419,15 +386,9 @@ export default defineComponent({
             });
         };
 
-<<<<<<< HEAD
         const kurangiBiayaBiaya = (index, biayaIndex) => {
             if (selectedMarker.value.satuan[index].biaya.length > 1) {
                 selectedMarker.value.satuan[index].biaya.splice(biayaIndex, 1);
-=======
-        const kurangiBiayaBiaya = (index) => {
-            if (selectedMarker.value.satuan[index].biaya.length > 1) {
-                selectedMarker.value.satuan[index].biaya.pop();
->>>>>>> 985726be07f53b939b4e788d034b1faad83877d6
             }
         };
 
@@ -532,14 +493,11 @@ export default defineComponent({
                         selectedMarker.value.satuan = formInput.satuan;
                         $("#showmarker").hide();
                         fetchData();
-<<<<<<< HEAD
                         fetchUser();
                         fetchAgent();
                         fetchCustomer();
                         fetchUnit();
                         fetchBiaya();
-=======
->>>>>>> 985726be07f53b939b4e788d034b1faad83877d6
                     },
                     error: function (error) {
                         console.error("Error saving data:", error);
@@ -632,11 +590,7 @@ export default defineComponent({
             // Then call fetchData every 30 seconds
             // setInterval(fetchData, 60000);
             getCurrentLocation();
-<<<<<<< HEAD
             // getReverseGeocoding();
-=======
-            getReverseGeocoding();
->>>>>>> 985726be07f53b939b4e788d034b1faad83877d6
             // handleMarkerClick();
             // $("#showmarker").hide();
         });
@@ -951,10 +905,6 @@ export default defineComponent({
                                                                     '-' +
                                                                     biayaIndex
                                                                 "
-<<<<<<< HEAD
-=======
-                                                                class=""
->>>>>>> 985726be07f53b939b4e788d034b1faad83877d6
                                                                 >Nama Biaya
                                                                 {{
                                                                     biayaIndex +
@@ -1015,26 +965,6 @@ export default defineComponent({
                                                                 placeholder="isi Nama Harga"
                                                             />
 
-<<<<<<< HEAD
-=======
-                                                            <!-- <input
-                                                                type="text"
-                                                                :id="
-                                                                    'biaya' +
-                                                                    index +
-                                                                    '-' +
-                                                                    biayaIndex
-                                                                "
-                                                                v-model="
-                                                                    biaya.harga
-                                                                "
-                                                                @input="
-                                                                    handleInput
-                                                                "
-                                                                class="w-full rounded-md text-xs border border-dark-eval-0 border-opacity-25"
-                                                            /> -->
-
->>>>>>> 985726be07f53b939b4e788d034b1faad83877d6
                                                             <p
                                                                 v-if="
                                                                     !biaya.harga
@@ -1104,15 +1034,6 @@ export default defineComponent({
                                     id="notes"
                                     class="w-full mb-2 p-2 border focus:outline-none focus:ring focus:border-blue-300 h-16 md:h-16 rounded-lg text-sm"
                                 />
-<<<<<<< HEAD
-=======
-                                <!-- <p
-                                v-if="!formInput.notes"
-                                class="text-red-500 mb-4"
-                            >
-                                Catatan tidak boleh kosong
-                            </p> -->
->>>>>>> 985726be07f53b939b4e788d034b1faad83877d6
                             </div>
                         </div>
 
@@ -1185,11 +1106,7 @@ export default defineComponent({
                                 Nama Customer :
                                 {{ selectedMarker.name_customer }}
                             </h1>
-<<<<<<< HEAD
                             <div>
-=======
-                            <div class="">
->>>>>>> 985726be07f53b939b4e788d034b1faad83877d6
                                 <div
                                     class="pb-2"
                                     v-for="(
