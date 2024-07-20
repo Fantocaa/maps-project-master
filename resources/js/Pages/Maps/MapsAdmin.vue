@@ -1332,7 +1332,14 @@ export default defineComponent({
                                                                 boleh kosong
                                                             </p>
                                                         </div>
-                                                        <div class="pb-2">
+                                                        <div
+                                                            :class="{
+                                                                hidden: !matchingUser.company.includes(
+                                                                    selectedMarker.name_company
+                                                                ),
+                                                            }"
+                                                            class="pb-2"
+                                                        >
                                                             <label
                                                                 :for="
                                                                     'biaya' +
@@ -1475,7 +1482,6 @@ export default defineComponent({
                                     selectedMarker ? selectedMarker.notes : ""
                                 }}</textarea
                             >
-                            <!-- </div> -->
 
                             <div class="flex lg:flex-row gap-2 justify-center">
                                 <button
