@@ -15,7 +15,7 @@ const { props } = usePage();
 let companies = ref([]); // Add this line
 
 const fetchDataCompany = async () => {
-    const response = await axios.get("/api/company");
+    const response = await axios.get("/company");
     companies.value = response.data;
 };
 

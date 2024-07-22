@@ -1,17 +1,40 @@
 <script setup>
 import AuthenticatedLayout from "@/Layouts/Authenticated.vue";
-import { Link } from "@inertiajs/vue3";
+import { Link, usePage, useForm } from "@inertiajs/vue3";
 import DataTable from "datatables.net-vue3";
 import DataTablesCore from "datatables.net";
 import "datatables.net-select";
 import "datatables.net-responsive";
-import $ from "jquery";
 import axios from "axios";
-import { reactive, ref, onMounted } from "vue";
+import { ref, onMounted } from "vue";
 import Button from "@/Components/Button.vue";
-// import { GithubIcon } from "@/Components/Icons/brands";
 
 DataTable.use(DataTablesCore);
+
+// Get CSRF token from meta tag
+const csrfToken = document
+    .querySelector('meta[name="csrf-token"]')
+    .getAttribute("content");
+
+// Set default headers for axios
+axios.defaults.headers.common["X-CSRF-TOKEN"] = csrfToken;
+
+// Initialize forms
+const companyForm = useForm({
+    name_company: "",
+});
+
+const agentForm = useForm({
+    name_agent: "",
+});
+
+const unitForm = useForm({
+    name_satuan: "",
+});
+
+const biayaForm = useForm({
+    biaya_name: "",
+});
 
 const companyData = ref(null);
 const agentData = ref(null);
@@ -19,27 +42,72 @@ const unitData = ref(null);
 const biayaData = ref(null);
 
 const fetchDataCompany = async () => {
-    const response = await axios.get("/api/company");
+    const response = await axios.get("/company");
     companyData.value = response.data;
-    // console.log(response.data);
 };
 
 const fetchDataAgent = async () => {
-    const response = await axios.get("/api/agent");
+    const response = await axios.get("/agent");
     agentData.value = response.data;
-    // console.log(response.data);
 };
 
 const fetchDataUnit = async () => {
-    const response = await axios.get("/api/unit");
+    const response = await axios.get("/unit");
     unitData.value = response.data;
-    // console.log(response.data);
 };
 
 const fetchDataBiaya = async () => {
-    const response = await axios.get("/api/biaya_name");
+    const response = await axios.get("/biaya_name");
     biayaData.value = response.data;
-    // console.log(response.data);
+};
+
+const submitCompanyForm = async () => {
+    try {
+        await companyForm.post("/manage/company/new");
+        alert("Data Saving Success");
+        closeModal("company");
+        await fetchDataCompany();
+    } catch (error) {
+        alert("Data Saving Failed. Try Again!");
+    }
+};
+
+const submitAgentForm = async () => {
+    try {
+        await agentForm.post("/manage/agent/new");
+        alert("Data Saving Success");
+        closeModal("agent");
+        await fetchDataAgent();
+    } catch (error) {
+        alert("Data Saving Failed. Try Again!");
+    }
+};
+const submitUnitForm = async () => {
+    try {
+        await unitForm.post("/manage/unit/new");
+        alert("Data Saving Success");
+        closeModal("unit");
+        await fetchDataUnit();
+    } catch (error) {
+        alert("Data Saving Failed. Try Again!");
+    }
+};
+const submitBiayaForm = async () => {
+    try {
+        await biayaForm.post("/manage/biaya/new");
+        alert("Data Saving Success");
+        closeModal("biaya");
+        await fetchDataBiaya();
+    } catch (error) {
+        alert("Data Saving Failed. Try Again!");
+    }
+};
+
+const closeModal = (modalId) => {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.close();
+    }
 };
 
 onMounted(async () => {
@@ -61,7 +129,6 @@ const columnsCompany = [
     {
         data: null,
         title: "Actions",
-        // orderable: false,
         render: function (data, type, row) {
             return `<a href="/manage/company/${data.id}/edit">
                 <button type="btn" class="btn btn-primary">
@@ -82,7 +149,6 @@ const columnsAgent = [
     {
         data: null,
         title: "Actions",
-        // orderable: false,
         render: function (data, type, row) {
             return `<a href="/manage/agent/${data.id}/edit">
                 <button type="btn" class="btn btn-primary">
@@ -103,7 +169,6 @@ const columnsUnit = [
     {
         data: null,
         title: "Actions",
-        // orderable: false,
         render: function (data, type, row) {
             return `<a href="/manage/unit/${data.id}/edit">
                 <button type="btn" class="btn btn-primary">
@@ -124,7 +189,6 @@ const columnsBiaya = [
     {
         data: null,
         title: "Actions",
-        // orderable: false,
         render: function (data, type, row) {
             return `<a href="/manage/biaya/${data.id}/edit">
                 <button type="btn" class="btn btn-primary">
@@ -145,10 +209,6 @@ const columnsBiaya = [
             <div
                 class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-4"
             >
-                <!-- <h2 class="text-xl font-semibold leading-tight">
-                    Manage Company
-                </h2> -->
-
                 <dialog id="company" class="modal">
                     <div class="modal-box bg-dark-eval-0">
                         <form method="dialog">
@@ -158,7 +218,7 @@ const columnsBiaya = [
                                 ✕
                             </button>
                         </form>
-                        <form action="/manage/company/new" method="post">
+                        <form @submit.prevent="submitCompanyForm">
                             <label
                                 for="name_company"
                                 class="block text-sm font-medium"
@@ -168,6 +228,7 @@ const columnsBiaya = [
                                 type="text"
                                 id="name_company"
                                 name="name_company"
+                                v-model="companyForm.name_company"
                                 class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm my-4 text-dark-eval-0"
                             />
                             <button type="submit" class="mt-2 btn btn-primary">
@@ -185,7 +246,7 @@ const columnsBiaya = [
                                 ✕
                             </button>
                         </form>
-                        <form action="/manage/agent/new" method="post">
+                        <form @submit.prevent="submitAgentForm">
                             <label
                                 for="name_agent"
                                 class="block text-sm font-medium"
@@ -195,6 +256,7 @@ const columnsBiaya = [
                                 type="text"
                                 id="name_agent"
                                 name="name_agent"
+                                v-model="agentForm.name_agent"
                                 class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm my-4 text-dark-eval-0"
                             />
                             <button type="submit" class="mt-2 btn btn-primary">
@@ -212,7 +274,7 @@ const columnsBiaya = [
                                 ✕
                             </button>
                         </form>
-                        <form action="/manage/unit/new" method="post">
+                        <form @submit.prevent="submitUnitForm">
                             <label
                                 for="name_satuan"
                                 class="block text-sm font-medium"
@@ -222,6 +284,7 @@ const columnsBiaya = [
                                 type="text"
                                 id="name_satuan"
                                 name="name_satuan"
+                                v-model="unitForm.name_satuan"
                                 class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm my-4 text-dark-eval-0"
                             />
                             <button type="submit" class="mt-2 btn btn-primary">
@@ -239,7 +302,7 @@ const columnsBiaya = [
                                 ✕
                             </button>
                         </form>
-                        <form action="/manage/biaya/new" method="post">
+                        <form @submit.prevent="submitBiayaForm">
                             <label
                                 for="biaya_name"
                                 class="block text-sm font-medium"
@@ -249,6 +312,7 @@ const columnsBiaya = [
                                 type="text"
                                 id="biaya_name"
                                 name="biaya_name"
+                                v-model="biayaForm.biaya_name"
                                 class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm my-4 text-dark-eval-0"
                             />
                             <button type="submit" class="mt-2 btn btn-primary">

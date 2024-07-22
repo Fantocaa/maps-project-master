@@ -16,7 +16,7 @@ DataTable.use(DataTablesCore);
 let data = ref([]);
 
 const fetchData = async () => {
-    const response = await axios.get("/api/role");
+    const response = await axios.get("/role");
     data.value = response.data;
 };
 

@@ -20,7 +20,21 @@ export default defineComponent({
             },
         };
     },
-
+    computed: {
+        isMatchingCompany() {
+            return this.matchingUser.company.includes(
+                this.selectedMarker.name_company
+            );
+        },
+        isMatchingUserandCompany() {
+            return (
+                this.matchingUser &&
+                this.matchingUser.company.includes(
+                    this.selectedMarker.name_company
+                )
+            );
+        },
+    },
     methods: {
         handleInput(event) {
             const input = event.target.value;
@@ -80,7 +94,7 @@ export default defineComponent({
 
         const getReverseGeocoding = async (lat, lng) => {
             try {
-                const response = await axios.get("/api/reverse-geocode", {
+                const response = await axios.get("/reverse-geocode", {
                     params: { lat, lng },
                 });
                 return response.data.address;
@@ -205,7 +219,7 @@ export default defineComponent({
 
         const fetchUser = async () => {
             try {
-                const response = await axios.get("/api/role");
+                const response = await axios.get("/role");
                 const data = response.data;
                 user.value = data.map((user) => ({
                     id: user.id,
@@ -242,7 +256,7 @@ export default defineComponent({
 
         const fetchData = async () => {
             try {
-                const response = await fetch("/api/maps");
+                const response = await fetch("/maps/index");
                 let data = await response.json();
 
                 // Filter data berdasarkan name_company yang sama dengan name_company dari matchingUser
@@ -295,7 +309,7 @@ export default defineComponent({
 
         const fetchCustomer = async () => {
             try {
-                const response = await axios.get("/api/company");
+                const response = await axios.get("/company");
                 const data = response.data;
                 customer.value = data.map((customer) => customer.name_company);
             } catch (error) {
@@ -305,7 +319,7 @@ export default defineComponent({
 
         const fetchAgent = async () => {
             try {
-                const response = await axios.get("/api/agent");
+                const response = await axios.get("/agent");
                 const data = response.data;
                 agent.value = data.map((agent) => agent.name_agent);
             } catch (error) {
@@ -315,7 +329,7 @@ export default defineComponent({
 
         const fetchUnit = async () => {
             try {
-                const response = await axios.get("/api/unit");
+                const response = await axios.get("/unit");
                 const data = response.data;
                 satuan.value = data.map((satuan) => satuan.name_satuan);
                 // console.log(satuan.value);
@@ -331,7 +345,7 @@ export default defineComponent({
 
         const fetchBiaya = async () => {
             try {
-                const response = await axios.get("/api/biaya_name");
+                const response = await axios.get("/biaya_name");
                 const data = response.data;
                 apiData.biaya = data.map((biaya) => biaya.biaya_name);
                 // console.log(apiData.biaya);
@@ -435,9 +449,14 @@ export default defineComponent({
 
                     // Menggunakan Ajax jQuery untuk mengirim data
                     $.ajax({
-                        url: "/api/maps",
                         type: "POST",
                         contentType: "application/json",
+                        headers: {
+                            "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr(
+                                "content"
+                            ),
+                        },
+                        url: "/maps/store",
                         data: JSON.stringify(formData),
                         success: function (data) {
                             alert("Data saved : Success", data);
@@ -490,9 +509,14 @@ export default defineComponent({
                 };
 
                 $.ajax({
-                    url: `/api/maps/edit/${selectedMarker.value.id}`,
+                    url: `/maps/edit/${selectedMarker.value.id}`,
                     type: "POST",
                     contentType: "application/json",
+                    headers: {
+                        "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr(
+                            "content"
+                        ),
+                    },
                     data: JSON.stringify(formData),
                     success: function (data) {
                         alert("Data saved : Success", data);
@@ -519,8 +543,14 @@ export default defineComponent({
         const deleteSaveFormData = () => {
             if (selectedMarker.value && selectedMarker.value.id) {
                 $.ajax({
-                    url: `/api/maps/delete/${selectedMarker.value.id}`,
+                    url: `/maps/delete/${selectedMarker.value.id}`,
                     type: "DELETE",
+                    contentType: "application/json",
+                    headers: {
+                        "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr(
+                            "content"
+                        ),
+                    },
                     success: function (data) {
                         alert("Data deleted : Success", data);
                         const index = markers.value.findIndex(
@@ -1236,7 +1266,15 @@ export default defineComponent({
                                                     class="w-full flex gap-2"
                                                 >
                                                     <div
-                                                        class="w-full lg:grid grid-cols-2 xl:grid-cols-3 gap-4"
+                                                        :class="[
+                                                            'w-full lg:grid gap-4',
+                                                            {
+                                                                'grid-cols-2':
+                                                                    !isMatchingCompany,
+                                                                'xl:grid-cols-3':
+                                                                    isMatchingCompany,
+                                                            },
+                                                        ]"
                                                     >
                                                         <div class="pb-2">
                                                             <label

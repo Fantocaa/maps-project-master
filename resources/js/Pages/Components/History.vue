@@ -11,13 +11,9 @@ let data = ref([]);
 let dataTable = null; // Tambahkan variabel untuk menyimpan referensi ke instance DataTables
 
 const fetchData = async () => {
-    const response = await axios.get("/api/maps");
+    const response = await axios.get("/maps/index");
     data.value = response.data;
 };
-
-// onMounted(async () => {
-//     fetchData();
-// });
 
 onMounted(async () => {
     await fetchData();
