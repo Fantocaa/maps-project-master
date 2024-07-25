@@ -47,24 +47,7 @@ class MdMapsController extends Controller
 
                 return [
                     'name_satuan' => $satuan->name_satuan,
-                    // 'biaya' => $biayas->map(function ($biaya) {
-                    //     return [
-                    //         'name_biaya' => $biaya->name_biaya,
-                    //         'harga' => $biaya->harga
-                    //     ];
-                    // })
                     'biaya' => $biayas->map(function ($biaya) {
-                        // Get the id from md_biaya_names
-                        // $biaya_name_id = md_biaya_name::where('biaya_name', $biaya->name_biaya)->first()->id;
-
-                        // $biaya_name = md_biaya_name::where('biaya_name', $biaya->name_biaya)->first();
-                        // if ($biaya_name) {
-                        //     $biaya_name_id = $biaya_name->id;
-                        //     // ...
-                        // } else {
-
-                        // }
-
                         return [
                             'name_biaya' => $biaya->biaya_name,
                             'harga' => $biaya->harga,
@@ -155,7 +138,6 @@ class MdMapsController extends Controller
                     $biaya = new md_biaya();
                     $biaya->id_maps = $form->id; // Mengatur id_maps ke id dari md_maps yang baru saja dibuat
                     $biaya->id_satuan = $satuan->id; // Mengatur id_satuan ke id dari md_satuan yang ditemukan
-                    // $biaya->name_biaya = $biayaData['id'];
 
                     // Find the biaya_name by its name and set its id
                     if (isset($biayaData['name_biaya'])) {

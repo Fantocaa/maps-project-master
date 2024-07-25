@@ -146,10 +146,42 @@ export default defineComponent({
             center.value = clickedPosition;
             klikmarker.value = [];
             $("#showmarker").hide();
+
+            saveMapPosition(); // Save map position after map click
         };
 
-        const mapWasMounted = (_map) => {
-            mapInstance.value = _map;
+        const handleMapIdle = () => {
+            saveMapPosition(); // Save map position on map idle
+        };
+
+        const saveMapPosition = () => {
+            if (mapInstance.value) {
+                const mapPosition = {
+                    center: mapInstance.value.getCenter().toJSON(),
+                    zoom: mapInstance.value.getZoom(),
+                };
+                localStorage.setItem(
+                    "mapPosition",
+                    JSON.stringify(mapPosition)
+                );
+                console.log("Map position has been cached:", mapPosition);
+            }
+        };
+
+        const loadMapPosition = () => {
+            const cachedPosition = localStorage.getItem("mapPosition");
+            if (cachedPosition) {
+                const { center: cachedCenter, zoom: cachedZoom } =
+                    JSON.parse(cachedPosition);
+                center.value = cachedCenter;
+                zoom.value = cachedZoom;
+                mapInstance.value.setCenter(cachedCenter);
+                mapInstance.value.setZoom(cachedZoom);
+                console.log("Loaded map position from cache:", {
+                    center: cachedCenter,
+                    zoom: cachedZoom,
+                });
+            }
         };
 
         const handleMarkerClick = (clickedMarker) => {
@@ -217,6 +249,15 @@ export default defineComponent({
             }
         };
 
+        const mapWasMounted = (_map) => {
+            mapInstance.value = _map;
+
+            // Tambahkan event listener untuk idle event
+            _map.addListener("idle", handleMapIdle);
+            console.log("Idle event listener added.");
+
+            loadMapPosition();
+        };
         const fetchUser = async () => {
             try {
                 const response = await axios.get("/role");
@@ -243,11 +284,11 @@ export default defineComponent({
                 if (foundUser) {
                     // User ditemukan, simpan data tersebut ke matchingUser
                     matchingUser.value = foundUser;
-                    console.log("User ditemukan:", matchingUser.value);
+                    // console.log("User ditemukan:", matchingUser.value);
                     fetchData();
                 } else {
                     // User tidak ditemukan, lakukan sesuatu yang lain
-                    console.log("User tidak ditemukan");
+                    // console.log("User tidak ditemukan");
                 }
             } catch (error) {
                 console.error("Error fetching data:", error);
@@ -255,55 +296,68 @@ export default defineComponent({
         };
 
         const fetchData = async () => {
-            try {
-                const response = await fetch("/maps/index");
-                let data = await response.json();
+            const cachedMarkers = localStorage.getItem("markers");
+            if (cachedMarkers) {
+                markers.value = JSON.parse(cachedMarkers);
+                // console.log("Loaded markers from cache.");
+            } else {
+                try {
+                    const response = await fetch("/maps/index");
+                    let data = await response.json();
 
-                // Filter data berdasarkan name_company yang sama dengan name_company dari matchingUser
-                // data = data.filter((map) =>
-                //     matchingUser.value.company.includes(map.name_company)
-                // );
+                    // Filter data berdasarkan name_company yang sama dengan name_company dari matchingUser
+                    // data = data.filter((map) =>
+                    //     matchingUser.value.company.includes(map.name_company)
+                    // );
 
-                // data = data.filter((map) =>
-                //     matchingUser.value.view_company.includes(map.name_company)
-                // );
+                    // data = data.filter((map) =>
+                    //     matchingUser.value.view_company.includes(map.name_company)
+                    // );
 
-                data = data.filter(
-                    (map) =>
-                        matchingUser.value.view_company.includes(
-                            map.name_company
-                        ) &&
-                        matchingUser.value.view_customer.includes(
-                            map.name_customer
-                        )
-                );
+                    data = data.filter(
+                        (map) =>
+                            matchingUser.value.view_company.includes(
+                                map.name_company
+                            ) &&
+                            matchingUser.value.view_customer.includes(
+                                map.name_customer
+                            )
+                    );
 
-                markers.value = data.map((map) => ({
-                    position: {
-                        lat: parseFloat(map.lat),
-                        lng: parseFloat(map.lng),
-                    },
-                    id: map.id,
-                    notes: map.notes,
-                    name: map.name,
-                    date: map.date,
-                    lokasi: map.lokasi,
-                    name_agent: map.name_agent,
-                    name_customer: map.name_customer,
-                    name_company: map.name_company,
-                    name_penerima: map.name_penerima,
-                    satuan: map.satuan.map((satuan) => ({
-                        name_satuan: satuan.name_satuan,
-                        biaya: satuan.biaya.map((biaya) => ({
-                            name_biaya: biaya.name_biaya,
-                            harga: biaya.harga,
-                            harga_modal: biaya.harga_modal,
+                    markers.value = data.map((map) => ({
+                        position: {
+                            lat: parseFloat(map.lat),
+                            lng: parseFloat(map.lng),
+                        },
+                        id: map.id,
+                        notes: map.notes,
+                        name: map.name,
+                        date: map.date,
+                        lokasi: map.lokasi,
+                        name_agent: map.name_agent,
+                        name_customer: map.name_customer,
+                        name_company: map.name_company,
+                        name_penerima: map.name_penerima,
+                        satuan: map.satuan.map((satuan) => ({
+                            name_satuan: satuan.name_satuan,
+                            biaya: satuan.biaya.map((biaya) => ({
+                                name_biaya: biaya.name_biaya,
+                                harga: biaya.harga,
+                                harga_modal: biaya.harga_modal,
+                            })),
                         })),
-                    })),
-                }));
-                // console.log(markers.value);
-            } catch (error) {
-                console.error("Error fetching data:", error);
+                        showForm: false,
+                    }));
+
+                    // Simpan data ke localStorage
+                    localStorage.setItem(
+                        "markers",
+                        JSON.stringify(markers.value)
+                    );
+                    // console.log("Fetched data from server and saved to cache.");
+                } catch (error) {
+                    console.error("Error fetching data:", error);
+                }
             }
         };
 
@@ -624,7 +678,8 @@ export default defineComponent({
             fetchUser();
             fetchUnit();
             fetchBiaya();
-
+            loadMapPosition();
+            handleMapIdle();
             // Then call fetchData every 30 seconds
             // setInterval(fetchData, 60000);
             getCurrentLocation();
@@ -668,6 +723,9 @@ export default defineComponent({
             tambahBiayaBiaya,
             kurangiBiayaBiaya,
             options,
+            handleMapIdle,
+            saveMapPosition,
+            loadMapPosition,
         };
     },
 });
@@ -693,7 +751,7 @@ export default defineComponent({
                 </GMapAutocomplete>
             </div>
         </div>
-        <!-- api-key="AIzaSyD2dASx5Zo68GSyZuPjUs-4SBLYGsn4OPQ" -->
+
         <GMapMap
             id="google-map"
             class="w-full h-[75vh] lg:h-screen"

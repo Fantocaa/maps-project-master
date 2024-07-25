@@ -25,7 +25,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::middleware([])->group(function () {
+// Route::middleware([])->group(function () {
     // Route::resource('maps', MdMapsController::class);
 
     // Route::get('/reverse-geocode', [MdMapsController::class, 'geocode']);
@@ -43,4 +43,4 @@ Route::middleware([])->group(function () {
     // Route::get('/agent', [MdAgentController::class, 'index'])->name('index.agent');
     // Route::get('/unit', [MdSatuanController::class, 'index'])->name('index.unit');
     // Route::get('/biaya_name', [MdBiayaNameController::class, 'index'])->name('index.biaya_name');
-});
+// });

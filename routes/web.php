@@ -26,17 +26,7 @@ use App\Http\Controllers\UserCompanyController;
 */
 
 Route::get('/', function () {
-    // if (Auth::check()) {
-    // The user is logged in, redirect them to the desired page
     return redirect('/login');
-    // } else {
-    //     return Inertia::render('Welcome', [
-    //         'canLogin' => Route::has('login'),
-    //         // 'canRegister' => Route::has('register'),
-    //         'laravelVersion' => Application::VERSION,
-    //         'phpVersion' => PHP_VERSION,
-    //     ]);
-    // }
 });
 
 // Route::get('/register', function () {
@@ -86,7 +76,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/reverse-geocode', [MdMapsController::class, 'geocode']);
 
     Route::post('/maps/edit/{id}/', [MdMapsController::class, 'update_maps'])->name('update_form_maps');
-
     Route::delete('/maps/delete/{id}/', [MdMapsController::class, 'delete_maps'])->name('delete_form_maps');
 
     Route::get('/role', [MdMapsController::class, 'has_role'])->name('has_role');
