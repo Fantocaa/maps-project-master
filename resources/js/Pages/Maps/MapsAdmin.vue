@@ -20,21 +20,21 @@ export default defineComponent({
             },
         };
     },
-    computed: {
-        isMatchingCompany() {
-            return this.matchingUser.company.includes(
-                this.selectedMarker.name_company
-            );
-        },
-        isMatchingUserandCompany() {
-            return (
-                this.matchingUser &&
-                this.matchingUser.company.includes(
-                    this.selectedMarker.name_company
-                )
-            );
-        },
-    },
+    // computed: {
+    //     isMatchingCompany() {
+    //         return this.matchingUser.company.includes(
+    //             this.selectedMarker.name_company
+    //         );
+    //     },
+    //     isMatchingUserandCompany() {
+    //         return (
+    //             this.matchingUser &&
+    //             this.matchingUser.company.includes(
+    //                 this.selectedMarker.name_company
+    //             )
+    //         );
+    //     },
+    // },
     methods: {
         handleInput(event) {
             const input = event.target.value;
@@ -258,6 +258,7 @@ export default defineComponent({
 
             loadMapPosition();
         };
+
         const fetchUser = async () => {
             try {
                 const response = await axios.get("/role");
@@ -273,7 +274,7 @@ export default defineComponent({
                     roles: user.role,
                     company: user.company,
                     view_company: user.view_company,
-                    view_customer: user.view_customer,
+                    // view_customer: user.view_customer,
                 }));
 
                 // Mencari user yang cocok
@@ -296,69 +297,59 @@ export default defineComponent({
         };
 
         const fetchData = async () => {
-            const cachedMarkers = localStorage.getItem("markers");
-            if (cachedMarkers) {
-                markers.value = JSON.parse(cachedMarkers);
-                // console.log("Loaded markers from cache.");
-            } else {
-                try {
-                    const response = await fetch("/maps/index");
-                    let data = await response.json();
+            // const cachedMarkers = localStorage.getItem("markers");
+            // if (cachedMarkers) {
+            //     markers.value = JSON.parse(cachedMarkers);
+            //     // console.log("Loaded markers from cache.");
+            // } else {
+            try {
+                const response = await fetch("/maps/index");
+                let data = await response.json();
 
-                    // Filter data berdasarkan name_company yang sama dengan name_company dari matchingUser
-                    // data = data.filter((map) =>
-                    //     matchingUser.value.company.includes(map.name_company)
-                    // );
+                // Filter data berdasarkan name_company yang sama dengan name_company dari matchingUser
+                data = data.filter(
+                    (map) =>
+                        matchingUser.value.view_company.includes(
+                            map.name_company
+                        ) ||
+                        matchingUser.value.company.includes(map.name_company) ||
+                        matchingUser.value.company.includes(map.name_customer)
+                );
 
-                    // data = data.filter((map) =>
-                    //     matchingUser.value.view_company.includes(map.name_company)
-                    // );
+                // console.log(data);
 
-                    data = data.filter(
-                        (map) =>
-                            matchingUser.value.view_company.includes(
-                                map.name_company
-                            ) &&
-                            matchingUser.value.view_customer.includes(
-                                map.name_customer
-                            )
-                    );
-
-                    markers.value = data.map((map) => ({
-                        position: {
-                            lat: parseFloat(map.lat),
-                            lng: parseFloat(map.lng),
-                        },
-                        id: map.id,
-                        notes: map.notes,
-                        name: map.name,
-                        date: map.date,
-                        lokasi: map.lokasi,
-                        name_agent: map.name_agent,
-                        name_customer: map.name_customer,
-                        name_company: map.name_company,
-                        name_penerima: map.name_penerima,
-                        satuan: map.satuan.map((satuan) => ({
-                            name_satuan: satuan.name_satuan,
-                            biaya: satuan.biaya.map((biaya) => ({
-                                name_biaya: biaya.name_biaya,
-                                harga: biaya.harga,
-                                harga_modal: biaya.harga_modal,
-                            })),
+                markers.value = data.map((map) => ({
+                    position: {
+                        lat: parseFloat(map.lat),
+                        lng: parseFloat(map.lng),
+                    },
+                    id: map.id,
+                    notes: map.notes,
+                    name: map.name,
+                    date: map.date,
+                    lokasi: map.lokasi,
+                    name_agent: map.name_agent,
+                    name_customer: map.name_customer,
+                    name_company: map.name_company,
+                    name_penerima: map.name_penerima,
+                    satuan: map.satuan.map((satuan) => ({
+                        name_satuan: satuan.name_satuan,
+                        biaya: satuan.biaya.map((biaya) => ({
+                            name_biaya: biaya.name_biaya,
+                            harga: biaya.harga,
+                            harga_modal: biaya.harga_modal,
                         })),
-                        showForm: false,
-                    }));
+                    })),
+                    showForm: false,
+                }));
 
-                    // Simpan data ke localStorage
-                    localStorage.setItem(
-                        "markers",
-                        JSON.stringify(markers.value)
-                    );
-                    // console.log("Fetched data from server and saved to cache.");
-                } catch (error) {
-                    console.error("Error fetching data:", error);
-                }
+                // Simpan data ke localStorage
+                // localStorage.setItem("markers", JSON.stringify(markers.value));
+                // console.log("Fetched data from server and saved to cache.");
+            } catch (error) {
+                console.error("Error fetching data:", error);
             }
+            // }
         };
 
         const fetchCustomer = async () => {

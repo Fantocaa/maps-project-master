@@ -68,8 +68,8 @@ class UserController extends Controller
             'company_id.id' => ['exists:md_companies,id'],
             'id_view_name_company' => ['required', 'array'],
             'id_view_name_company.id' => ['exists:md_companies,id'],
-            'id_view_name_customer' => ['required', 'array'],
-            'id_view_name_customer.id' => ['exists:md_companies,id'],
+            // 'id_view_name_customer' => ['required', 'array'],
+            // 'id_view_name_customer.id' => ['exists:md_companies,id'],
         ]);
 
         $user = User::find($userId);
@@ -116,30 +116,30 @@ class UserController extends Controller
             $user->viewCompanies()->create(['company_id' => $viewCompanyId]);
         }
 
-        $viewCustomerIds = array_map(function ($view_customer) {
-            if (is_array($view_customer) && isset($view_customer['id'])) {
-                return $view_customer['id'];
-            }
+        // $viewCustomerIds = array_map(function ($view_customer) {
+        //     if (is_array($view_customer) && isset($view_customer['id'])) {
+        //         return $view_customer['id'];
+        //     }
 
-            if (is_string($view_customer)) {
-                $company = Company::where('name_company', $view_customer)->first();
+        //     if (is_string($view_customer)) {
+        //         $company = Company::where('name_company', $view_customer)->first();
 
-                // Jika perusahaan ditemukan, kembalikan ID-nya
-                if ($company) {
-                    return $company->id;
-                }
-            }
+        //         // Jika perusahaan ditemukan, kembalikan ID-nya
+        //         if ($company) {
+        //             return $company->id;
+        //         }
+        //     }
 
-            return null;
-        }, $request->id_view_name_customer);
+        //     return null;
+        // }, $request->id_view_name_customer);
 
-        $viewCustomerIds = array_filter($viewCustomerIds);
+        // $viewCustomerIds = array_filter($viewCustomerIds);
 
-        $user->viewCustomers()->delete();
+        // $user->viewCustomers()->delete();
 
-        foreach ($viewCustomerIds as $viewCompanyId) {
-            $user->viewCustomers()->create(['customer_id' => $viewCompanyId]);
-        }
+        // foreach ($viewCustomerIds as $viewCompanyId) {
+        //     $user->viewCustomers()->create(['customer_id' => $viewCompanyId]);
+        // }
 
         return Redirect::route('manage.user');
     }

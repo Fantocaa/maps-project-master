@@ -38,7 +38,7 @@ const columns = [
     { data: "role", title: "Role" },
     { data: "company", title: "Company" },
     { data: "view_company", title: "View Company" },
-    { data: "view_customer", title: "View Customer" },
+    // { data: "view_customer", title: "View Customer" },
     {
         data: null,
         title: "Actions",

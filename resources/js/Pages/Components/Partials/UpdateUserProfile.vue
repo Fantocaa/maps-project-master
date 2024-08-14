@@ -30,12 +30,12 @@ let form = useForm({
     id_view_name_company: ref(
         props.user.view_companies.map((vc) => vc.company.name_company)
     ),
-    id_view_name_customer: ref(
-        props.user.view_customers.map((vc) => vc.company.name_company)
-    ),
+    // id_view_name_customer: ref(
+    //     props.user.view_customers.map((vc) => vc.company.name_company)
+    // ),
 });
 
-console.log(props.user);
+// console.log(props.user);
 
 onMounted(() => {
     fetchDataCompany();
@@ -57,7 +57,6 @@ onMounted(() => {
         <!-- @submit.prevent="form.patch(route('user.update'))" -->
         <form
             @submit.prevent="
-                // form.patch(route('user.update', { id: props.user.id }))
                 form.patch(route('user.update', { id: props.user.id }), {
                     ...form,
                     company_id: form.company_id.value,
@@ -158,6 +157,30 @@ onMounted(() => {
                 <InputError class="mt-2" :message="form.errors.company_id" />
             </div>
 
+            <!-- <div>
+                <Label for="company" value="Company" />
+                <select
+                    id="company"
+                    v-model="form.company_id"
+                    required
+                    :class="[
+                        'py-2 border-gray-400 rounded-md',
+                        'focus:border-gray-400 focus:ring focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white',
+                        'dark:border-gray-600 dark:bg-dark-eval-1 dark:text-gray-300 dark:focus:ring-offset-dark-eval-1 w-full',
+                    ]"
+                >
+                    <option value="" disabled>Select a company</option>
+                    <option
+                        v-for="company in companies"
+                        :key="company.id"
+                        :value="company.id"
+                    >
+                        {{ company.name_company }}
+                    </option>
+                </select>
+                <InputError class="mt-2" :message="form.errors.company_id" />
+            </div> -->
+
             <div>
                 <Label for="view_company" value="View Company" />
                 <vSelect
@@ -178,7 +201,7 @@ onMounted(() => {
                 />
             </div>
 
-            <div>
+            <!-- <div>
                 <Label for="view_customer" value="View Customer" />
                 <vSelect
                     id="view_customer"
@@ -196,7 +219,7 @@ onMounted(() => {
                     class="mt-2"
                     :message="form.errors.id_view_name_customer"
                 />
-            </div>
+            </div> -->
 
             <div class="flex items-center gap-4">
                 <Button :disabled="form.processing">Save</Button>
