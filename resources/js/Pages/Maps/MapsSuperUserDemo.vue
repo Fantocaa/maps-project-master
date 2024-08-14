@@ -970,7 +970,7 @@ export default defineComponent({
                                                     class="w-full flex gap-2"
                                                 >
                                                     <div
-                                                        class="lg:grid grid-cols-2 xl:grid-cols-3 gap-4"
+                                                        class="lg:grid grid-cols-2 gap-4"
                                                     >
                                                         <div class="pb-2">
                                                             <label
@@ -1050,7 +1050,7 @@ export default defineComponent({
                                                             </p>
                                                         </div>
                                                         <!-- Harga Modal -->
-                                                        <div class="pb-2">
+                                                        <!-- <div class="pb-2">
                                                             <label
                                                                 :for="
                                                                     'biaya' +
@@ -1088,7 +1088,7 @@ export default defineComponent({
                                                                 tidak boleh
                                                                 kosong
                                                             </p>
-                                                        </div>
+                                                        </div> -->
                                                     </div>
                                                     <div
                                                         class="flex gap-2 pt-2 lg:hidden"
@@ -1303,8 +1303,10 @@ export default defineComponent({
                                                         :class="[
                                                             'w-full lg:grid gap-4',
                                                             {
-                                                                'grid-cols-2': !matchingUser.company.includes(selectedMarker.name_company),
-                    'xl:grid-cols-3': matchingUser.company.includes(selectedMarker.name_company) && biayaItem.harga_modal,
+                                                                'grid-cols-2':
+                                                                    !isMatchingCompany,
+                                                                'xl:grid-cols-3':
+                                                                    isMatchingCompany,
                                                             },
                                                         ]"
                                                     >
@@ -1402,7 +1404,7 @@ export default defineComponent({
                                                                 boleh kosong
                                                             </p>
                                                         </div>
-                                                        <div
+                                                        <!-- <div
                                                             :class="{
                                                                 hidden: !matchingUser.company.includes(
                                                                     selectedMarker.name_company
@@ -1455,7 +1457,7 @@ export default defineComponent({
                                                                 tidak boleh
                                                                 kosong
                                                             </p>
-                                                        </div>
+                                                        </div> -->
                                                     </div>
                                                     <div
                                                         class="flex gap-2 pt-2 lg:hidden"

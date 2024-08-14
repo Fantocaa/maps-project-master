@@ -103,24 +103,24 @@ Route::get('/manage/company', function () {
 
 //Maps Route
 
-Route::get('/maps', function () {
-})->middleware('auth.redirect');
+Route::get('/maps', function () {})->middleware('auth.redirect');
 
 Route::get('/maps/user', function () {
     return Inertia::render('Maps/MapsUser');
-})->middleware(['auth', 'verified', 'role:user|superuser|admin|superadmin'])->name('mapsUser');
+})->middleware(['auth', 'verified', 'role:user|superadmin'])->name('mapsUser');
 
 Route::get('/maps/superuser', function () {
-    return Inertia::render('Maps/MapsSuperUser');
-})->middleware(['auth', 'verified', 'role:superuser|admin|superadmin'])->name('mapsSuperUser');
+    return Inertia::render('Maps/MapsSuperUserDemo');
+})->middleware(['auth', 'verified', 'role:superuser|superadmin'])->name('mapsSuperUser');
 
 Route::get('/maps/admin', function () {
     return Inertia::render('Maps/MapsAdmin');
 })->middleware(['auth', 'verified', 'role:admin|superadmin'])->name('mapsAdmin');
+// })->middleware(['auth', 'verified', 'role:superuser|admin|superadmin'])->name('mapsAdmin');
 
-Route::get('/maps/admincopy', function () {
-    return Inertia::render('Maps/MapsAdmin Copy');
-})->middleware(['auth', 'verified', 'role:admin|superadmin'])->name('mapsAdmincopy');
+// Route::get('/maps/admincopy', function () {
+//     return Inertia::render('Maps/MapsAdmin Copy');
+// })->middleware(['auth', 'verified', 'role:admin|superadmin'])->name('mapsAdmincopy');
 
 
 require __DIR__ . '/auth.php';

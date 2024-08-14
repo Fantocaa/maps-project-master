@@ -6,21 +6,50 @@ import { Head } from "@inertiajs/vue3";
 import { router } from "@inertiajs/vue3";
 import { Link } from "@inertiajs/vue3";
 import axios from "axios";
+import vSelect from "vue-select";
+import "vue-select/dist/vue-select.css";
+import { reactive } from "vue";
 
 export default defineComponent({
+    data() {
+        return {
+            rawHarga: 0,
+            biaya: {
+                harga: "",
+                harga_modal: "",
+            },
+        };
+    },
+    methods: {
+        handleInput(event) {
+            const input = event.target.value;
+            const numericValue = parseInt(input.replace(/\D/g, ""), 10) || 0;
+            this.biaya.harga = numericValue.toString();
+            this.biaya.harga_modal = numericValue.toString();
+            event.target.value = "Rp. " + numericValue.toLocaleString("id-ID");
+        },
+    },
     emits: ["position_changed", "tilt_changed"],
-    components: { Marker, Head, Link },
+    components: {
+        Marker,
+        Head,
+        Link,
+        vSelect,
+    },
     props: { auth: Object },
     setup(props) {
         const center = ref({ lat: 0, lng: 0 });
         const markers = ref([]);
         const klikmarker = ref([]);
-        const selectedMarker = ref(true);
+        const selectedMarker = ref(false);
         const mapInstance = ref(null);
         const address = ref("");
         const user = ref([]);
-
-        // console.log(props.auth.user);
+        const agent = ref([]);
+        const customer = ref([]);
+        const satuan = ref([]);
+        const biaya = ref([]);
+        const matchingUser = ref(null);
 
         const getCurrentLocation = () => {
             if (markers.value.length > 0) {
@@ -35,11 +64,6 @@ export default defineComponent({
                                 lng: position.coords.longitude,
                             };
                             center.value = userLocation;
-                            // markers.value.push({
-                            //   position: userLocation,
-                            //   label: "",
-                            //   title: "Your Location",
-                            // });
                         },
                         (error) => {
                             console.error("Error getting location:", error);
@@ -53,36 +77,96 @@ export default defineComponent({
             }
         };
 
-        const getReverseGeocoding = (lat, lng) => {
-            return fetch(
-                `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=AIzaSyD2dASx5Zo68GSyZuPjUs-4SBLYGsn4OPQ`
-            )
-                .then((response) => response.json())
-                .then((data) => {
-                    if (data.results && data.results.length > 0) {
-                        const address = data.results[0].formatted_address;
-                        return address; // Kembalikan alamat
-                    } else {
-                        return null; // Kembalikan null jika tidak ada hasil
-                    }
-                })
-                .catch((error) => {
-                    console.error(error);
-                    return null; // Kembalikan null jika terjadi kesalahan
+        const getReverseGeocoding = async (lat, lng) => {
+            try {
+                const response = await axios.get("/reverse-geocode", {
+                    params: { lat, lng },
                 });
+                return response.data.address;
+            } catch (error) {
+                console.error(error);
+                return null;
+            }
         };
 
         const logout = () => {
             router.post("/logout");
         };
 
-        const formInput = ref({
-            // title: "",
-            notes: "",
-        });
+        const options = ref([]);
 
-        const mapWasMounted = (_map) => {
-            mapInstance.value = _map;
+        const formInput = ref([
+            {
+                notes: "",
+                name_penerima: "",
+                name_agent: null,
+                name_customer: null,
+                name_satuan: null,
+                biaya: [{ nama: null, harga: "", harga_modal: "" }],
+            },
+        ]);
+
+        const handleMapClick = (event) => {
+            const clickedPosition = {
+                lat: event.latLng.lat(),
+                lng: event.latLng.lng(),
+            };
+
+            // Panggil fungsi reverse geocoding dengan latitude dan longitude
+            getReverseGeocoding(clickedPosition.lat, clickedPosition.lng)
+                .then((receivedAddress) => {
+                    if (receivedAddress) {
+                        address.value = receivedAddress; // Update the address variable with the received address
+                    }
+                })
+                .catch((error) => console.error(error));
+
+            markers.value.push({
+                position: clickedPosition,
+                label: "",
+                title: "New Marker",
+                showForm: true,
+            });
+
+            center.value = clickedPosition;
+            klikmarker.value = [];
+            $("#showmarker").hide();
+
+            saveMapPosition(); // Save map position after map click
+        };
+
+        const handleMapIdle = () => {
+            saveMapPosition(); // Save map position on map idle
+        };
+
+        const saveMapPosition = () => {
+            if (mapInstance.value) {
+                const mapPosition = {
+                    center: mapInstance.value.getCenter().toJSON(),
+                    zoom: mapInstance.value.getZoom(),
+                };
+                localStorage.setItem(
+                    "mapPosition",
+                    JSON.stringify(mapPosition)
+                );
+                console.log("Map position has been cached:", mapPosition);
+            }
+        };
+
+        const loadMapPosition = () => {
+            const cachedPosition = localStorage.getItem("mapPosition");
+            if (cachedPosition) {
+                const { center: cachedCenter, zoom: cachedZoom } =
+                    JSON.parse(cachedPosition);
+                center.value = cachedCenter;
+                zoom.value = cachedZoom;
+                mapInstance.value.setCenter(cachedCenter);
+                mapInstance.value.setZoom(cachedZoom);
+                console.log("Loaded map position from cache:", {
+                    center: cachedCenter,
+                    zoom: cachedZoom,
+                });
+            }
         };
 
         const handleMarkerClick = (clickedMarker) => {
@@ -103,8 +187,22 @@ export default defineComponent({
                     name: clickedMarker.name,
                     date: clickedMarker.date,
                     lokasi: clickedMarker.lokasi,
+                    name_company: clickedMarker.name_company,
+                    name_penerima: clickedMarker.name_penerima,
+                    name_agent: clickedMarker.name_agent,
+                    name_customer: clickedMarker.name_customer,
+                    // satuan: clickedMarker.satuan,
+                    satuan: clickedMarker.satuan.map((satuan) => ({
+                        name_satuan: satuan.name_satuan,
+                        biaya: satuan.biaya.map((biaya) => ({
+                            name_biaya: biaya.name_biaya,
+                            harga: biaya.harga,
+                            harga_modal: biaya.harga_modal,
+                        })),
+                    })),
                     showForm: true,
                 };
+                // console.log(selectedMarker.value);
                 $("#showmarker").show();
             }
 
@@ -130,10 +228,80 @@ export default defineComponent({
                 .catch((error) => console.error(error));
         };
 
-        const fetchData = async () => {
+        const defineSelectedMarkerValueSatuan = (satuan) => {
+            if (selectedMarker.value) {
+                selectedMarker.value.satuan = satuan;
+            }
+        };
+
+        const mapWasMounted = (_map) => {
+            mapInstance.value = _map;
+
+            // Tambahkan event listener untuk idle event
+            _map.addListener("idle", handleMapIdle);
+            console.log("Idle event listener added.");
+
+            loadMapPosition();
+        };
+
+        const fetchUser = async () => {
             try {
-                const response = await axios.get("/api/maps");
+                const response = await axios.get("/role");
                 const data = response.data;
+                user.value = data.map((user) => ({
+                    id: user.id,
+                    name: user.name,
+                    email: user.email,
+                    email_verified_at: user.email_verified_at,
+                    created_at: user.created_at,
+                    updated_at: user.updated_at,
+                    deleted_at: user.deleted_at,
+                    roles: user.role,
+                    company: user.company,
+                    view_company: user.view_company,
+                    // view_customer: user.view_customer,
+                }));
+
+                // Mencari user yang cocok
+                const foundUser = user.value.find(
+                    (u) => u.id === props.auth.user.id
+                );
+
+                if (foundUser) {
+                    // User ditemukan, simpan data tersebut ke matchingUser
+                    matchingUser.value = foundUser;
+                    // console.log("User ditemukan:", matchingUser.value);
+                    fetchData();
+                } else {
+                    // User tidak ditemukan, lakukan sesuatu yang lain
+                    // console.log("User tidak ditemukan");
+                }
+            } catch (error) {
+                console.error("Error fetching data:", error);
+            }
+        };
+
+        const fetchData = async () => {
+            // const cachedMarkers = localStorage.getItem("markers");
+            // if (cachedMarkers) {
+            //     markers.value = JSON.parse(cachedMarkers);
+            //     // console.log("Loaded markers from cache.");
+            // } else {
+            try {
+                const response = await fetch("/maps/index");
+                let data = await response.json();
+
+                // Filter data berdasarkan name_company yang sama dengan name_company dari matchingUser
+                data = data.filter(
+                    (map) =>
+                        matchingUser.value.view_company.includes(
+                            map.name_company
+                        ) ||
+                        matchingUser.value.company.includes(map.name_company) ||
+                        matchingUser.value.company.includes(map.name_customer)
+                );
+
+                // console.log(data);
 
                 markers.value = data.map((map) => ({
                     position: {
@@ -141,30 +309,293 @@ export default defineComponent({
                         lng: parseFloat(map.lng),
                     },
                     id: map.id,
-                    label: "",
                     notes: map.notes,
                     name: map.name,
                     date: map.date,
                     lokasi: map.lokasi,
+                    name_agent: map.name_agent,
+                    name_customer: map.name_customer,
+                    name_company: map.name_company,
+                    name_penerima: map.name_penerima,
+                    satuan: map.satuan.map((satuan) => ({
+                        name_satuan: satuan.name_satuan,
+                        biaya: satuan.biaya.map((biaya) => ({
+                            name_biaya: biaya.name_biaya,
+                            harga: biaya.harga,
+                            harga_modal: biaya.harga_modal,
+                        })),
+                    })),
+                    showForm: false,
                 }));
 
-                console.log("Data fetched successfully:", markers.value);
+                // Simpan data ke localStorage
+                // localStorage.setItem("markers", JSON.stringify(markers.value));
+                // console.log("Fetched data from server and saved to cache.");
+            } catch (error) {
+                console.error("Error fetching data:", error);
+            }
+            // }
+        };
+
+        const fetchCustomer = async () => {
+            try {
+                const response = await axios.get("/company");
+                const data = response.data;
+                customer.value = data.map((customer) => customer.name_company);
             } catch (error) {
                 console.error("Error fetching data:", error);
             }
         };
 
-        const fetchUser = async () => {
+        const fetchAgent = async () => {
             try {
-                const response = await axios.get("/api/role");
+                const response = await axios.get("/agent");
                 const data = response.data;
-                user.value = data.map((user) => ({
-                    role_names: user.role_names,
-                }));
-
-                // console.log(user.value);
+                agent.value = data.map((agent) => agent.name_agent);
             } catch (error) {
                 console.error("Error fetching data:", error);
+            }
+        };
+
+        const fetchUnit = async () => {
+            try {
+                const response = await axios.get("/unit");
+                const data = response.data;
+                satuan.value = data.map((satuan) => satuan.name_satuan);
+                // console.log(satuan.value);
+            } catch (error) {
+                console.error("Error fetching data:", error);
+            }
+        };
+
+        const apiData = reactive({
+            biaya: [],
+            // Anda bisa menambahkan ref lain di sini jika perlu
+        });
+
+        const fetchBiaya = async () => {
+            try {
+                const response = await axios.get("/biaya_name");
+                const data = response.data;
+                apiData.biaya = data.map((biaya) => biaya.biaya_name);
+                // console.log(apiData.biaya);
+            } catch (error) {
+                console.error("Error fetching data:", error);
+            }
+        };
+
+        //add new marker
+
+        const tambahItem = () => {
+            formInput.value.push({
+                name_satuan: null,
+                biaya: [{ nama: "", harga: "", harga_modal: "" }],
+            });
+        };
+
+        const kurangiItem = () => {
+            if (formInput.value.length > 1) {
+                formInput.value.pop();
+            }
+        };
+
+        const tambahBiaya = (index) => {
+            formInput.value[index].biaya.push({
+                nama: "",
+                harga: "",
+                harga_modal: "",
+            });
+        };
+
+        const kurangiBiaya = (index) => {
+            if (formInput.value[index].biaya.length > 1) {
+                formInput.value[index].biaya.pop();
+            }
+        };
+
+        //showmarker
+
+        const tambahItemBiaya = () => {
+            selectedMarker.value.satuan.push({
+                name_satuan: null,
+                biaya: [{ name_biaya: "", harga: "", harga_modal: "" }],
+            });
+        };
+
+        const kurangiItemBiaya = () => {
+            if (selectedMarker.value.satuan.length > 1) {
+                selectedMarker.value.satuan.pop();
+            }
+        };
+
+        const tambahBiayaBiaya = (index) => {
+            selectedMarker.value.satuan[index].biaya.push({
+                name_biaya: "",
+                harga: "",
+                harga_modal: "",
+            });
+        };
+
+        const kurangiBiayaBiaya = (index, biayaIndex) => {
+            if (selectedMarker.value.satuan[index].biaya.length > 1) {
+                selectedMarker.value.satuan[index].biaya.splice(biayaIndex, 1);
+            }
+        };
+
+        const saveFormData = () => {
+            if (markers.value.length > 0) {
+                const lastMarker = markers.value[markers.value.length - 1];
+
+                if (
+                    lastMarker.position &&
+                    lastMarker.position.lat &&
+                    lastMarker.position.lng
+                ) {
+                    const formData = {
+                        notes: formInput.value.notes,
+                        lat: lastMarker.position.lat,
+                        lng: lastMarker.position.lng,
+                        name: props.auth.user.name,
+                        lokasi: address.value,
+                        name_penerima: formInput.value.name_penerima,
+                        name_company: matchingUser.value
+                            ? matchingUser.value.company.join(", ")
+                            : "Loading...",
+                        name_agent: formInput.value.name_agent,
+                        name_customer: formInput.value.name_customer,
+                        satuan: formInput.value.map((item) => {
+                            return {
+                                name_satuan: item.name_satuan,
+                                biaya: item.biaya.map((biaya) => {
+                                    return {
+                                        name_biaya: biaya.nama,
+                                        harga: biaya.harga,
+                                        harga_modal: biaya.harga_modal,
+                                    };
+                                }),
+                            };
+                        }),
+                    };
+
+                    // Menggunakan Ajax jQuery untuk mengirim data
+                    $.ajax({
+                        type: "POST",
+                        contentType: "application/json",
+                        headers: {
+                            "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr(
+                                "content"
+                            ),
+                        },
+                        url: "/maps/store",
+                        data: JSON.stringify(formData),
+                        success: function (data) {
+                            alert("Data saved : Success", data);
+
+                            markers.value[
+                                markers.value.length - 1
+                            ].showForm = false;
+
+                            // Reset formInput.value to its initial state
+                            formInput.value = [
+                                {
+                                    notes: "",
+                                    name_penerima: "",
+                                    name_agent: null,
+                                    name_customer: null,
+                                    name_satuan: null,
+                                    biaya: [
+                                        {
+                                            nama: "",
+                                            harga: "",
+                                            harga_modal: "",
+                                        },
+                                    ],
+                                },
+                            ];
+                            fetchData();
+                            fetchUser();
+                            fetchAgent();
+                            fetchCustomer();
+                            fetchUnit();
+                            fetchBiaya();
+                        },
+                        error: function (error) {
+                            console.error("Error saving data:", error);
+                        },
+                    });
+                } else {
+                    console.error("Error: Marker position data is incomplete");
+                }
+            } else {
+                console.error("Error: No markers available to save");
+            }
+        };
+
+        const editSaveFormData = () => {
+            if (selectedMarker.value && selectedMarker.value.id) {
+                const formData = {
+                    notes: selectedMarker.value.notes,
+                    satuan: selectedMarker.value.satuan,
+                };
+
+                $.ajax({
+                    url: `/maps/edit/${selectedMarker.value.id}`,
+                    type: "POST",
+                    contentType: "application/json",
+                    headers: {
+                        "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr(
+                            "content"
+                        ),
+                    },
+                    data: JSON.stringify(formData),
+                    success: function (data) {
+                        alert("Data saved : Success", data);
+                        // Update the notes of the selectedMarker directly
+                        selectedMarker.value.notes = formInput.notes;
+                        selectedMarker.value.satuan = formInput.satuan;
+                        $("#showmarker").hide();
+                        fetchData();
+                        fetchUser();
+                        fetchAgent();
+                        fetchCustomer();
+                        fetchUnit();
+                        fetchBiaya();
+                    },
+                    error: function (error) {
+                        console.error("Error saving data:", error);
+                    },
+                });
+            } else {
+                console.error("Error: No marker selected for editing");
+            }
+        };
+
+        const deleteSaveFormData = () => {
+            if (selectedMarker.value && selectedMarker.value.id) {
+                $.ajax({
+                    url: `/maps/delete/${selectedMarker.value.id}`,
+                    type: "DELETE",
+                    contentType: "application/json",
+                    headers: {
+                        "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr(
+                            "content"
+                        ),
+                    },
+                    success: function (data) {
+                        alert("Data deleted : Success", data);
+                        const index = markers.value.findIndex(
+                            (marker) => marker.id === selectedMarker.value.id
+                        );
+                        markers.value.splice(index, 1);
+                        $("#showmarker").hide();
+                        fetchData();
+                    },
+                    error: function (error) {
+                        console.error("Error deleting data:", error);
+                    },
+                });
+            } else {
+                console.error("Error: No marker selected for deletion");
             }
         };
 
@@ -192,14 +623,12 @@ export default defineComponent({
         const closeShowMarker = () => {
             if (markers.value.length > 0) {
                 const lastMarker = markers.value[markers.value.length - 1];
-
                 if (lastMarker.id) {
                     // If the marker has an id, only hide the form
                     lastMarker.showForm = false;
                 } else {
                     // If the marker doesn't have an id, remove it from the array
                     markers.value.pop();
-
                     // Set showForm to false for the new last marker
                     if (markers.value.length > 0) {
                         markers.value[
@@ -208,7 +637,6 @@ export default defineComponent({
                     }
                 }
             }
-
             $("#showmarker").hide();
         };
 
@@ -220,12 +648,18 @@ export default defineComponent({
         };
 
         onMounted(async () => {
-            fetchData();
+            // fetchData();
+            fetchAgent();
+            fetchCustomer();
+            fetchUser();
+            fetchUnit();
+            fetchBiaya();
+            loadMapPosition();
+            handleMapIdle();
             // Then call fetchData every 30 seconds
             // setInterval(fetchData, 60000);
             getCurrentLocation();
-            getReverseGeocoding();
-            fetchUser();
+            // getReverseGeocoding();
             // handleMarkerClick();
             // $("#showmarker").hide();
         });
@@ -233,19 +667,41 @@ export default defineComponent({
         return {
             user,
             zoom,
+            agent,
+            customer,
             center,
+            satuan,
+            biaya,
+            apiData,
             logout,
             markers,
             address,
             setPlace,
+            matchingUser,
+            kurangiBiaya,
             formInput,
+            tambahBiaya,
+            tambahItem,
+            kurangiItem,
             closeModal,
             klikmarker,
+            defineSelectedMarkerValueSatuan,
+            handleMapClick,
             handleMarkerClick,
+            deleteSaveFormData,
+            editSaveFormData,
             closeShowMarker,
             selectedMarker,
             mapWasMounted,
-            fetchData,
+            saveFormData,
+            tambahItemBiaya,
+            kurangiItemBiaya,
+            tambahBiayaBiaya,
+            kurangiBiayaBiaya,
+            options,
+            handleMapIdle,
+            saveMapPosition,
+            loadMapPosition,
         };
     },
 });
@@ -254,7 +710,9 @@ export default defineComponent({
 <template>
     <Head title="Maps" />
     <div class="mx-auto relative h-full">
-        <div class="lg:hidden top-4 md:top-4 w-full px-4 md:px-8 pt-6 lg:pt-0">
+        <div
+            class="lg:hidden top-4 md:top-4 w-full px-4 md:px-8 pt-6 lg:pt-0 text-sm"
+        >
             <div class="relative mb-6">
                 <img
                     src="/images/icon/search.svg"
@@ -264,21 +722,22 @@ export default defineComponent({
                 <GMapAutocomplete
                     placeholder="Cari Lokasi"
                     @place_changed="setPlace"
-                    class="px-4 py-2 md:py-4 w-full md:w-[576px] xl:w-[800px] rounded-full focus:outline-none focus:ring focus:border-blue-300 lg:shadow-xl border pl-14 text-lg"
+                    class="px-4 py-2 md:py-[10px] w-64 md:w-[576px] xl:w-[800px] rounded-full focus:outline-none focus:ring focus:border-blue-300 lg:shadow-xl border pl-14 text:sm lg:text-lg"
                 >
                 </GMapAutocomplete>
             </div>
         </div>
+
         <GMapMap
-            api-key="AIzaSyD2dASx5Zo68GSyZuPjUs-4SBLYGsn4OPQ"
             id="google-map"
+            class="w-full h-[75vh] lg:h-screen"
             :center="center"
-            class="w-full h-[60vh] lg:h-screen"
             :zoom="zoom"
             :options="{ disableDefaultUI: true }"
             @load="mapWasMounted"
             gestureHandling="greedy"
         >
+            <!-- @click="handleMapClick" -->
             <GMapMarker
                 :clickable="true"
                 v-for="marker in markers"
@@ -302,44 +761,30 @@ export default defineComponent({
                         <GMapAutocomplete
                             placeholder="Cari Lokasi"
                             @place_changed="setPlace"
-                            class="px-4 py-4 md:py-4 w-full md:w-[576px] xl:w-[800px] border rounded-full focus:outline-none focus:ring focus:border-blue-300 shadow-xl border-none pl-14 text-lg"
+                            class="px-4 py-4 md:py-2 2xl:py-4 w-full md:w-[576px] xl:w-[800px] border rounded-full focus:outline-none focus:ring focus:border-blue-300 shadow-xl border-none pl-14 text-lg"
                         >
                         </GMapAutocomplete>
                     </div>
                 </div>
 
                 <div
-                    class="pt-6 lg:pt-0 lg:absolute bottom-8 right-2 md:bottom-0 md:top-6 md:right-8 z-10"
+                    class="pt-6 md:pt-0 absolute right-2 top-0 md:top-6 md:right-8 z-10 flex justify-end md:px-0"
                 >
-                    <div class="flex gap-4 justify-end mx-4">
-                        <!-- Open the modal using ID.showModal() method -->
-                        <button
-                            class="bg-green-600 border-none text-white hover:bg-green-700 text-base pl-12 relative rounded-full btn shadow-xl"
-                            v-on:click="fetchData"
-                        >
-                            <img
-                                src="/images/icon/refresh.svg"
-                                alt="User"
-                                class="absolute left-3 top-1/2 transform -translate-y-1/2 scale-50"
-                            />
-                            Refresh
-                        </button>
-                        <button
-                            class="bg-red-600 border-none text-white hover:bg-red-700 text-base pl-10 relative rounded-full btn shadow-xl"
-                            onclick="my_modal_2.showModal()"
-                        >
-                            <img
-                                src="/images/icon/user.svg"
-                                alt="User"
-                                class="absolute left-3 top-1/2 transform -translate-y-1/2"
-                            />
-                            Akun
-                        </button>
-                    </div>
-
+                    <!-- Open the modal using ID.showModal() method -->
+                    <button
+                        class="bg-red-600 border-none text-white hover:bg-red-700 text-base pl-10 relative rounded-full btn px-4 shadow-xl py-2"
+                        onclick="my_modal_2.showModal()"
+                    >
+                        <img
+                            src="/images/icon/user.svg"
+                            alt="User"
+                            class="absolute left-3 top-1/2 transform -translate-y-1/2"
+                        />
+                        Akun
+                    </button>
                     <dialog id="my_modal_2" class="modal">
                         <div class="modal-box bg-white">
-                            <h1 class="text-xl font-semibold pb-2">
+                            <h1 class="text-xl font-semibold">
                                 Informasi Akun
                             </h1>
                             <!-- <p>
@@ -352,17 +797,18 @@ export default defineComponent({
                                 {{ auth.user.name }}
                             </p>
                             <p>
+                                Perusahaan:
+                                {{
+                                    matchingUser
+                                        ? matchingUser.company.join(", ")
+                                        : "Loading..."
+                                }}
+                            </p>
+                            <p>
                                 Login Dengan Email:
                                 {{ auth.user.email }}
                             </p>
                             <div class="flex justify-center gap-4">
-                                <!-- <Link href="/dashboard">
-                            <button
-                                class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-8 rounded z-40 mt-8"
-                            >
-                                Dashboard
-                            </button>
-                        </Link> -->
                                 <button
                                     class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-8 rounded z-40 mt-8"
                                     onclick="logout_button.showModal()"
@@ -406,40 +852,395 @@ export default defineComponent({
 
             <!-- Show Marker -->
             <div
-                v-if="selectedMarker"
+                v-show="selectedMarker"
                 id="showmarker"
-                :data-id="selectedMarker ? selectedMarker.id : ''"
-                class="absolute z-10 inset-0 flex items-center justify-center"
+                :data-id="
+                    selectedMarker.value && selectedMarker.value.satuan
+                        ? selectedMarker.value.satuan
+                        : ''
+                "
+                class="absolute z-10 inset-0 flex items-center justify-center 2xl:pl-[40%] text-xs pt-[86px] md:pt-24 lg:pt-0"
                 style="display: none"
             >
                 <div
-                    class="bg-white w-full max-w-md h-auto rounded-xl p-8 relative shadow-xl mx-4"
+                    class="bg-white w-full lg:w-[512px] xl:w-[660px] max-h-[1024px] rounded-xl p-8 relative shadow-xl mx-4 md:mx-24"
                 >
                     <form @submit.prevent="editSaveFormData">
+                        <!-- <div class="overflow-y-scroll max-h-[448px]"> -->
                         <h1 class="pb-4 w-[90%]">
-                            Alamat : {{ selectedMarker.lokasi }}
+                            Alamat :
+                            {{ selectedMarker.lokasi }}
                         </h1>
-
-                        <label for="notes">Description:</label>
-
-                        <textarea
-                            id="notes"
-                            class="w-full mb-2 p-2 border h-32 md:h-56"
-                            disabled
+                        <div
+                            class="max-h-[448px] xl:max-h-[384px] 2xl:max-h-[448px] overflow-auto"
                         >
-                                {{ selectedMarker ? selectedMarker.notes : "" }}
-                            </textarea
-                        >
+                            <h1 class="pb-4 w-[90%]">
+                                Nama Penerima :
+                                {{ selectedMarker.name_penerima }}
+                            </h1>
+                            <h1 class="pb-4 w-[90%]">
+                                Nama Agent :
+                                {{ selectedMarker.name_agent }}
+                            </h1>
+                            <h1 class="pb-4 w-[90%]">
+                                Nama Customer :
+                                {{ selectedMarker.name_customer }}
+                            </h1>
+                            <div>
+                                <div
+                                    class="pb-2"
+                                    v-for="(
+                                        satuanItem, index
+                                    ) in selectedMarker.satuan"
+                                    :key="index"
+                                >
+                                    <div>
+                                        <div class="flex gap-2 md:gap-4 pb-2">
+                                            <div class="w-full">
+                                                <label
+                                                    :for="'name_satuan' + index"
+                                                    class="pb-2"
+                                                    >Satuan:</label
+                                                >
+                                                <v-select
+                                                    disabled
+                                                    :id="'name_satuan' + index"
+                                                    :options="satuan"
+                                                    v-model="
+                                                        satuanItem.name_satuan
+                                                    "
+                                                    class="w-full"
+                                                />
+                                                <p
+                                                    v-if="
+                                                        !satuanItem.name_satuan
+                                                    "
+                                                    class="text-red-500"
+                                                >
+                                                    Satuan tidak boleh kosong
+                                                </p>
+                                            </div>
+                                            <!-- <div class="flex pt-2 gap-2">
+                                                <button
+                                                    v-if="
+                                                        matchingUser &&
+                                                        matchingUser.company.includes(
+                                                            selectedMarker.name_company
+                                                        )
+                                                    "
+                                                    type="button"
+                                                    class="btn bg-green-500 text-white hover:bg-green-700"
+                                                    @click="tambahItemBiaya"
+                                                >
+                                                    +
+                                                </button>
+                                                <button
+                                                    v-if="
+                                                        matchingUser &&
+                                                        matchingUser.company.includes(
+                                                            selectedMarker.name_company
+                                                        )
+                                                    "
+                                                    type="button"
+                                                    class="btn bg-red-500 text-white hover:bg-red-700"
+                                                    @click="kurangiItemBiaya"
+                                                >
+                                                    -
+                                                </button>
+                                            </div> -->
+                                        </div>
 
-                        <div class="mt-8">
-                            <h1>Dibuat oleh : {{ selectedMarker.name }}</h1>
-                            <span>Dibuat pada : {{ selectedMarker.date }}</span>
+                                        <div class="flex gap-4">
+                                            <div class="flex flex-col w-full">
+                                                <div
+                                                    v-for="(
+                                                        biayaItem, biayaIndex
+                                                    ) in satuanItem.biaya"
+                                                    :key="biayaIndex"
+                                                    class="w-full flex gap-2"
+                                                >
+                                                    <div
+                                                        :class="[
+                                                            'w-full lg:grid gap-4',
+                                                            {
+                                                                'grid-cols-2':
+                                                                    !isMatchingCompany,
+                                                                'xl:grid-cols-3':
+                                                                    isMatchingCompany,
+                                                            },
+                                                        ]"
+                                                    >
+                                                        <div class="pb-2">
+                                                            <label
+                                                                :for="
+                                                                    'biaya' +
+                                                                    index +
+                                                                    '-' +
+                                                                    biayaIndex
+                                                                "
+                                                                class=""
+                                                                >Nama Biaya
+                                                                {{
+                                                                    biayaIndex +
+                                                                    1
+                                                                }}:</label
+                                                            >
+                                                            <v-select
+                                                                disabled
+                                                                :id="
+                                                                    'biaya' +
+                                                                    index +
+                                                                    '-' +
+                                                                    biayaIndex
+                                                                "
+                                                                v-model="
+                                                                    biayaItem.name_biaya
+                                                                "
+                                                                :options="
+                                                                    apiData.biaya
+                                                                "
+                                                                class="w-full rounded-lg text-xs"
+                                                            />
+                                                            <p
+                                                                v-if="
+                                                                    !biayaItem.name_biaya
+                                                                "
+                                                                class="text-red-500"
+                                                            >
+                                                                Nama Biaya tidak
+                                                                boleh kosong
+                                                            </p>
+                                                        </div>
+                                                        <div class="pb-2">
+                                                            <label
+                                                                :for="
+                                                                    'biaya' +
+                                                                    index +
+                                                                    '-' +
+                                                                    biayaIndex
+                                                                "
+                                                                >Harga Jual
+                                                                {{
+                                                                    biayaIndex +
+                                                                    1
+                                                                }}:</label
+                                                            >
+                                                            <input
+                                                                disabled
+                                                                :id="
+                                                                    'biaya' +
+                                                                    index +
+                                                                    '-' +
+                                                                    biayaIndex
+                                                                "
+                                                                v-model="
+                                                                    biayaItem.harga
+                                                                "
+                                                                class="w-full rounded-lg text-xs cursor-not-allowed"
+                                                                placeholder="isi Nama Harga"
+                                                                type="number"
+                                                            />
+                                                            <p
+                                                                v-if="
+                                                                    !biayaItem.harga
+                                                                "
+                                                                class="text-red-500"
+                                                            >
+                                                                Harga Jual tidak
+                                                                boleh kosong
+                                                            </p>
+                                                        </div>
+                                                        <!-- <div
+                                                            :class="{
+                                                                hidden: !matchingUser.company.includes(
+                                                                    selectedMarker.name_company
+                                                                ),
+                                                            }"
+                                                            class="pb-2"
+                                                        >
+                                                            <label
+                                                                :for="
+                                                                    'biaya' +
+                                                                    index +
+                                                                    '-' +
+                                                                    biayaIndex
+                                                                "
+                                                                >Harga Modal
+                                                                {{
+                                                                    biayaIndex +
+                                                                    1
+                                                                }}:</label
+                                                            >
+                                                            <input
+                                                                :disabled="
+                                                                    !(
+                                                                        matchingUser &&
+                                                                        matchingUser.company.includes(
+                                                                            selectedMarker.name_company
+                                                                        )
+                                                                    )
+                                                                "
+                                                                :id="
+                                                                    'biaya' +
+                                                                    index +
+                                                                    '-' +
+                                                                    biayaIndex
+                                                                "
+                                                                v-model="
+                                                                    biayaItem.harga_modal
+                                                                "
+                                                                class="w-full rounded-lg text-xs"
+                                                                placeholder="isi Nama Harga"
+                                                                type="number"
+                                                            />
+                                                            <p
+                                                                v-if="
+                                                                    !biayaItem.harga_modal
+                                                                "
+                                                                class="text-red-500"
+                                                            >
+                                                                Harga Modal
+                                                                tidak boleh
+                                                                kosong
+                                                            </p>
+                                                        </div> -->
+                                                    </div>
+                                                    <!-- <div
+                                                        class="flex gap-2 pt-2 lg:hidden"
+                                                    >
+                                                        <button
+                                                            v-if="
+                                                                matchingUser &&
+                                                                matchingUser.company.includes(
+                                                                    selectedMarker.name_company
+                                                                )
+                                                            "
+                                                            type="button"
+                                                            class="btn bg-green-500 text-white hover:bg-green-700"
+                                                            @click="
+                                                                tambahBiayaBiaya(
+                                                                    index
+                                                                )
+                                                            "
+                                                        >
+                                                            +
+                                                        </button>
+                                                        <button
+                                                            v-if="
+                                                                matchingUser &&
+                                                                matchingUser.company.includes(
+                                                                    selectedMarker.name_company
+                                                                )
+                                                            "
+                                                            type="button"
+                                                            class="btn bg-red-500 text-white hover:bg-red-700"
+                                                            @click="
+                                                                kurangiBiayaBiaya(
+                                                                    index
+                                                                )
+                                                            "
+                                                        >
+                                                            -
+                                                        </button>
+                                                    </div> -->
+                                                </div>
+                                            </div>
+                                            <!-- <div
+                                                class="gap-2 pt-2 hidden lg:flex"
+                                            >
+                                                <button
+                                                    v-if="
+                                                        matchingUser &&
+                                                        matchingUser.company.includes(
+                                                            selectedMarker.name_company
+                                                        )
+                                                    "
+                                                    type="button"
+                                                    class="btn bg-green-500 text-white hover:bg-green-700"
+                                                    @click="
+                                                        tambahBiayaBiaya(index)
+                                                    "
+                                                >
+                                                    +
+                                                </button>
+                                                <button
+                                                    v-if="
+                                                        matchingUser &&
+                                                        matchingUser.company.includes(
+                                                            selectedMarker.name_company
+                                                        )
+                                                    "
+                                                    type="button"
+                                                    class="btn bg-red-500 text-white hover:bg-red-700"
+                                                    @click="
+                                                        kurangiBiayaBiaya(index)
+                                                    "
+                                                >
+                                                    -
+                                                </button>
+                                            </div> -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <label for="notes">Catatan:</label>
+                            <textarea
+                                id="notes"
+                                class="w-full mb-2 p-2 border h-32 md:h-16 cursor-not-allowed"
+                                disabled
+                                >{{
+                                    selectedMarker ? selectedMarker.notes : ""
+                                }}</textarea
+                            >
+
+                            <!-- <div class="flex lg:flex-row gap-2 justify-center">
+                                <button
+                                    v-if="
+                                        matchingUser &&
+                                        matchingUser.company.includes(
+                                            selectedMarker.name_company
+                                        )
+                                    "
+                                    type="submit"
+                                    class="bg-blue-500 text-white py-3 px-4 rounded-md w-full"
+                                >
+                                    Save
+                                </button>
+                                <button
+                                    v-if="
+                                        matchingUser &&
+                                        matchingUser.company.includes(
+                                            selectedMarker.name_company
+                                        )
+                                    "
+                                    @click="deleteSaveFormData"
+                                    type="button"
+                                    class="bg-red-500 text-white py-3 px-4 rounded-md w-full"
+                                >
+                                    Delete
+                                </button>
+                            </div> -->
+                            <div class="mt-8">
+                                <h1>
+                                    Dibuat oleh :
+                                    {{ selectedMarker.name }}
+                                </h1>
+                                <h1>
+                                    Perusahaan :
+                                    {{ selectedMarker.name_company }}
+                                </h1>
+                                <span
+                                    >Dibuat pada :
+                                    {{ selectedMarker.date }}</span
+                                >
+                            </div>
                         </div>
                     </form>
                     <div class="absolute top-0 right-1">
                         <button
                             @click="closeShowMarker"
-                            class="absolute top-2 right-2 bg-red-500 text-white cursor-pointer btn btn-circle"
+                            class="absolute top-2 right-2 bg-red-500 text-white cursor-pointer btn btn-circle hover:bg-red-700"
                         >
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"
