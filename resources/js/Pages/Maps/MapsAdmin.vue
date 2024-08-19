@@ -103,6 +103,12 @@ export default defineComponent({
                 name_customer: null,
                 name_satuan: null,
                 biaya: [{ nama: null, harga: "", harga_modal: "" }],
+                // items: [
+                //     {
+                //         name_satuan: null,
+                //         biaya: [{ nama: "", harga: "", harga_modal: "" }],
+                //     },
+                // ],
             },
         ]);
 
@@ -400,30 +406,16 @@ export default defineComponent({
             }
         };
 
-        // const tambahItem = () => {
-        //     formInput.value.push({
-        //         name_satuan: null,
-        //         biaya: [{ nama: "", harga: "", harga_modal: "" }],
-        //     });
-        // };
-
-        const tambahItem = (customerIndex) => {
-            formInput.value[customerIndex].biaya.push({
-                nama: "",
-                harga: "",
-                harga_modal: "",
+        const tambahItem = () => {
+            formInput.value.push({
+                name_satuan: null,
+                biaya: [{ nama: "", harga: "", harga_modal: "" }],
             });
         };
 
-        // const kurangiItem = () => {
-        //     if (formInput.value.length > 1) {
-        //         formInput.value.pop();
-        //     }
-        // };
-
-        const kurangiItem = (customerIndex) => {
-            if (formInput.value[customerIndex].biaya.length > 1) {
-                formInput.value[customerIndex].biaya.pop();
+        const kurangiItem = () => {
+            if (formInput.value.length > 1) {
+                formInput.value.pop();
             }
         };
 
@@ -440,6 +432,59 @@ export default defineComponent({
                 formInput.value[index].biaya.pop();
             }
         };
+
+        // Tambah Customer
+        // const tambahCustomer = () => {
+        //     formInput.value.push({
+        //         name_customer: null,
+        //         items: [
+        //             {
+        //                 name_satuan: null,
+        //                 biaya: [{ nama: "", harga: "", harga_modal: "" }],
+        //             },
+        //         ],
+        //     });
+        // };
+
+        // // Kurangi Customer
+        // const kurangiCustomer = () => {
+        //     if (formInput.value.length > 1) {
+        //         formInput.value.pop();
+        //     }
+        // };
+
+        // // Tambah Item
+        // const tambahItem = (customerIndex) => {
+        //     formInput.value[customerIndex].items.push({
+        //         name_satuan: null,
+        //         biaya: [{ nama: "", harga: "", harga_modal: "" }],
+        //     });
+        // };
+
+        // // Kurangi Item
+        // const kurangiItem = (customerIndex) => {
+        //     if (formInput.value[customerIndex].items.length > 1) {
+        //         formInput.value[customerIndex].items.pop();
+        //     }
+        // };
+
+        // // Tambah Biaya
+        // const tambahBiaya = (customerIndex, itemIndex) => {
+        //     formInput.value[customerIndex].items[itemIndex].biaya.push({
+        //         nama: "",
+        //         harga: "",
+        //         harga_modal: "",
+        //     });
+        // };
+
+        // // Kurangi Biaya
+        // const kurangiBiaya = (customerIndex, itemIndex) => {
+        //     if (
+        //         formInput.value[customerIndex].items[itemIndex].biaya.length > 1
+        //     ) {
+        //         formInput.value[customerIndex].items[itemIndex].biaya.pop();
+        //     }
+        // };
 
         //showmarker
 
@@ -503,6 +548,23 @@ export default defineComponent({
                                 }),
                             };
                         }),
+                        // customer: formInput.value.map((item) => {
+                        //     return {
+                        //         name_customer: item.name_customer,
+                        //         satuan: item.satuan.map((satuan) => {
+                        //             return {
+                        //                 name_satuan: satuan.name_satuan,
+                        //                 biaya: satuan.biaya.map((biaya) => {
+                        //                     return {
+                        //                         name_biaya: biaya.nama,
+                        //                         harga: biaya.harga,
+                        //                         harga_modal: biaya.harga_modal,
+                        //                     };
+                        //                 }),
+                        //             };
+                        //         }),
+                        //     };
+                        // }),
                     };
 
                     // Menggunakan Ajax jQuery untuk mengirim data
@@ -538,6 +600,23 @@ export default defineComponent({
                                             harga_modal: "",
                                         },
                                     ],
+                                    // customer: [
+                                    //     {
+                                    //         name_customer: null,
+                                    //         satuan: [
+                                    //             {
+                                    //                 name_satuan: null,
+                                    //                 biaya: [
+                                    //                     {
+                                    //                         nama: "",
+                                    //                         harga: "",
+                                    //                         harga_modal: "",
+                                    //                     },
+                                    //                 ],
+                                    //             },
+                                    //         ],
+                                    //     },
+                                    // ],
                                 },
                             ];
                             fetchData();
@@ -927,6 +1006,142 @@ export default defineComponent({
                                     </p>
                                 </div>
                             </div>
+                            <!-- <div
+                                v-for="(customer, customerIndex) in formInput"
+                                :key="customerIndex"
+                                class="p-4 border rounded mb-4"
+                            >
+                                <div class="w-full flex gap-4">
+                                    <div class="w-full pb-2">
+                                        <label for="name_customer"
+                                            >Nama Customer:</label
+                                        >
+                                        <v-select
+                                            v-model="customer.name_customer"
+                                            :options="customer"
+                                            class="w-full"
+                                        />
+                                        <p
+                                            v-if="!customer.name_customer"
+                                            class="text-red-500"
+                                        >
+                                            Customer tidak boleh kosong
+                                        </p>
+                                    </div>
+                                    <div class="flex pt-2 gap-2">
+                                        <button
+                                            type="button"
+                                            class="btn bg-green-500 text-white hover:bg-green-700"
+                                            @click="tambahCustomer"
+                                        >
+                                            +
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="btn bg-red-500 text-white hover:bg-red-700"
+                                            @click="kurangiCustomer"
+                                        >
+                                            -
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div
+                                    v-for="(item, itemIndex) in customer.items"
+                                    :key="itemIndex"
+                                >
+                                    <div class="flex gap-4">
+                                        <div class="w-full">
+                                            <label for="name_satuan"
+                                                >Satuan:</label
+                                            >
+                                            <v-select
+                                                v-model="item.name_satuan"
+                                                :options="satuanOptions"
+                                                class="w-full"
+                                            />
+                                            <p
+                                                v-if="!item.name_satuan"
+                                                class="text-red-500"
+                                            >
+                                                Satuan tidak boleh kosong
+                                            </p>
+                                        </div>
+                                        <div class="flex pt-2 gap-2">
+                                            <button
+                                                type="button"
+                                                class="btn bg-green-500 text-white hover:bg-green-700"
+                                                @click="
+                                                    tambahItem(customerIndex)
+                                                "
+                                            >
+                                                +
+                                            </button>
+                                            <button
+                                                type="button"
+                                                class="btn bg-red-500 text-white hover:bg-red-700"
+                                                @click="
+                                                    kurangiItem(customerIndex)
+                                                "
+                                            >
+                                                -
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div
+                                        v-for="(
+                                            biaya, biayaIndex
+                                        ) in item.biaya"
+                                        :key="biayaIndex"
+                                        class="w-full flex gap-2"
+                                    >
+                                        <input
+                                            v-model="biaya.nama"
+                                            placeholder="Nama Biaya"
+                                            class="w-full"
+                                        />
+                                        <input
+                                            v-model="biaya.harga"
+                                            placeholder="Harga Jual"
+                                            class="w-full"
+                                        />
+                                        <input
+                                            v-model="biaya.harga_modal"
+                                            placeholder="Harga Modal"
+                                            class="w-full"
+                                        />
+
+                                        <div class="flex gap-2 pt-2">
+                                            <button
+                                                type="button"
+                                                class="btn bg-green-500 text-white hover:bg-green-700"
+                                                @click="
+                                                    tambahBiaya(
+                                                        customerIndex,
+                                                        itemIndex
+                                                    )
+                                                "
+                                            >
+                                                +
+                                            </button>
+                                            <button
+                                                type="button"
+                                                class="btn bg-red-500 text-white hover:bg-red-700"
+                                                @click="
+                                                    kurangiBiaya(
+                                                        customerIndex,
+                                                        itemIndex
+                                                    )
+                                                "
+                                            >
+                                                -
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div> -->
+
                             <div class="p-4 border rounded mb-4">
                                 <div class="w-full flex gap-4">
                                     <div class="w-full pb-2">
