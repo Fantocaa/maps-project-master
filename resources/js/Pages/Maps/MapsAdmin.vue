@@ -386,16 +386,44 @@ export default defineComponent({
 
         //add new marker
 
-        const tambahItem = () => {
+        const tambahCustomer = () => {
             formInput.value.push({
+                name_customer: null,
                 name_satuan: null,
                 biaya: [{ nama: "", harga: "", harga_modal: "" }],
             });
         };
 
-        const kurangiItem = () => {
+        const kurangiCustomer = () => {
             if (formInput.value.length > 1) {
                 formInput.value.pop();
+            }
+        };
+
+        // const tambahItem = () => {
+        //     formInput.value.push({
+        //         name_satuan: null,
+        //         biaya: [{ nama: "", harga: "", harga_modal: "" }],
+        //     });
+        // };
+
+        const tambahItem = (customerIndex) => {
+            formInput.value[customerIndex].biaya.push({
+                nama: "",
+                harga: "",
+                harga_modal: "",
+            });
+        };
+
+        // const kurangiItem = () => {
+        //     if (formInput.value.length > 1) {
+        //         formInput.value.pop();
+        //     }
+        // };
+
+        const kurangiItem = (customerIndex) => {
+            if (formInput.value[customerIndex].biaya.length > 1) {
+                formInput.value[customerIndex].biaya.pop();
             }
         };
 
@@ -681,6 +709,8 @@ export default defineComponent({
             kurangiBiaya,
             formInput,
             tambahBiaya,
+            tambahCustomer,
+            kurangiCustomer,
             tambahItem,
             kurangiItem,
             closeModal,
@@ -862,23 +892,6 @@ export default defineComponent({
                         <h1 class="pb-4 w-[90%]">Alamat : {{ address }}</h1>
                         <div class="overflow-y-scroll max-h-96 pr-4">
                             <div class="pb-2">
-                                <label for="name_penerima" class="pb-2"
-                                    >Nama Penerima:</label
-                                >
-                                <input
-                                    v-model="formInput.name_penerima"
-                                    id="name_penerima"
-                                    class="w-full mb-2 p-2 border focus:outline-none focus:ring focus:border-blue-300 rounded-lg text-xs"
-                                    placeholder="isi nama penerima"
-                                />
-                                <p
-                                    v-if="!formInput.name_penerima"
-                                    class="text-red-500"
-                                >
-                                    Nama Penerima tidak boleh kosong
-                                </p>
-                            </div>
-                            <div class="grid grid-cols-2 gap-4">
                                 <div class="w-full pb-2">
                                     <label for="name_agent" class="pb-2"
                                         >Nama Agent:</label
@@ -896,245 +909,291 @@ export default defineComponent({
                                         Agent tidak boleh kosong
                                     </p>
                                 </div>
-                                <div class="w-full pb-2">
-                                    <label for="name_customer" class="pb-2"
-                                        >Nama Customer:</label
+                                <div class="pb-4">
+                                    <label for="name_penerima" class="pb-2"
+                                        >Nama Penerima:</label
                                     >
-                                    <v-select
-                                        id="name_customer"
-                                        :options="customer"
-                                        v-model="formInput.name_customer"
-                                        class="w-full"
+                                    <input
+                                        v-model="formInput.name_penerima"
+                                        id="name_penerima"
+                                        class="w-full mb-2 p-2 border-gray-950 border-opacity-25 focus:outline-none focus:ring focus:border-blue-300 rounded text-xs"
+                                        placeholder="isi nama penerima"
                                     />
                                     <p
-                                        v-if="!formInput.name_customer"
+                                        v-if="!formInput.name_penerima"
                                         class="text-red-500"
                                     >
-                                        Customer tidak boleh kosong
+                                        Nama Penerima tidak boleh kosong
                                     </p>
                                 </div>
                             </div>
+                            <div class="p-4 border rounded mb-4">
+                                <div class="w-full flex gap-4">
+                                    <div class="w-full pb-2">
+                                        <label for="name_customer" class="pb-2"
+                                            >Nama Customer:</label
+                                        >
+                                        <v-select
+                                            id="name_customer"
+                                            :options="customer"
+                                            v-model="formInput.name_customer"
+                                            class="w-full"
+                                        />
+                                        <p
+                                            v-if="!formInput.name_customer"
+                                            class="text-red-500"
+                                        >
+                                            Customer tidak boleh kosong
+                                        </p>
+                                    </div>
+                                    <div class="flex pt-2 gap-2">
+                                        <button
+                                            type="button"
+                                            class="btn bg-green-500 text-white hover:bg-green-700"
+                                            @click="tambahCustomer"
+                                        >
+                                            +
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="btn bg-red-500 text-white hover:bg-red-700"
+                                            @click="kurangiCustomer"
+                                        >
+                                            -
+                                        </button>
+                                    </div>
+                                </div>
 
-                            <div>
-                                <div
-                                    class="pb-2"
-                                    v-for="(item, index) in formInput"
-                                    :key="index"
-                                >
-                                    <div>
-                                        <div class="flex gap-2 md:gap-4 pb-2">
-                                            <div class="w-full">
-                                                <label
-                                                    :for="'name_satuan' + index"
-                                                    class="pb-2"
-                                                    >Satuan:</label
-                                                >
-                                                <v-select
-                                                    :id="'name_satuan' + index"
-                                                    :options="satuan"
-                                                    v-model="item.name_satuan"
-                                                    class="w-full"
-                                                />
-                                                <p
-                                                    v-if="!item.name_satuan"
-                                                    class="text-red-500"
-                                                >
-                                                    Satuan tidak boleh kosong
-                                                </p>
-                                            </div>
-                                            <div class="flex pt-2 gap-2">
-                                                <button
-                                                    type="button"
-                                                    class="btn bg-green-500 text-white hover:bg-green-700"
-                                                    @click="tambahItem"
-                                                >
-                                                    +
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    class="btn bg-red-500 text-white hover:bg-red-700"
-                                                    @click="kurangiItem"
-                                                >
-                                                    -
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        <div class="flex gap-4">
-                                            <div class="flex flex-col w-full">
-                                                <div
-                                                    v-for="(
-                                                        biaya, biayaIndex
-                                                    ) in formInput[index].biaya"
-                                                    :key="biayaIndex"
-                                                    class="w-full flex gap-2"
-                                                >
-                                                    <div
-                                                        class="lg:grid grid-cols-2 xl:grid-cols-3 gap-4"
+                                <div>
+                                    <div
+                                        class="pb-2"
+                                        v-for="(item, index) in formInput"
+                                        :key="index"
+                                    >
+                                        <div>
+                                            <div
+                                                class="flex gap-2 md:gap-4 pb-2"
+                                            >
+                                                <div class="w-full">
+                                                    <label
+                                                        :for="
+                                                            'name_satuan' +
+                                                            index
+                                                        "
+                                                        class="pb-2"
+                                                        >Satuan:</label
                                                     >
-                                                        <div class="pb-2">
-                                                            <label
-                                                                :for="
-                                                                    'biaya' +
-                                                                    index +
-                                                                    '-' +
-                                                                    biayaIndex
-                                                                "
-                                                                >Nama Biaya
-                                                                {{
-                                                                    biayaIndex +
-                                                                    1
-                                                                }}:</label
-                                                            >
-                                                            <v-select
-                                                                :id="
-                                                                    'biaya' +
-                                                                    index +
-                                                                    '-' +
-                                                                    biayaIndex
-                                                                "
-                                                                v-model="
-                                                                    biaya.nama
-                                                                "
-                                                                :options="
-                                                                    apiData.biaya
-                                                                "
-                                                                class="w-full rounded-lg text-xs"
-                                                            />
-                                                            <p
-                                                                v-if="
-                                                                    !biaya.nama
-                                                                "
-                                                                class="text-red-500"
-                                                            >
-                                                                Nama Biaya tidak
-                                                                boleh kosong
-                                                            </p>
-                                                        </div>
-                                                        <div class="pb-2">
-                                                            <label
-                                                                :for="
-                                                                    'biaya' +
-                                                                    index +
-                                                                    '-' +
-                                                                    biayaIndex
-                                                                "
-                                                                >Harga Jual
-                                                                {{
-                                                                    biayaIndex +
-                                                                    1
-                                                                }}:</label
-                                                            >
-                                                            <input
-                                                                :id="
-                                                                    'biaya' +
-                                                                    index +
-                                                                    '-' +
-                                                                    biayaIndex
-                                                                "
-                                                                v-model="
-                                                                    biaya.harga
-                                                                "
-                                                                class="w-full rounded-lg text-xs"
-                                                                placeholder="isi Nama Harga"
-                                                            />
-
-                                                            <p
-                                                                v-if="
-                                                                    !biaya.harga
-                                                                "
-                                                                class="text-red-500"
-                                                            >
-                                                                Harga Jual tidak
-                                                                boleh kosong
-                                                            </p>
-                                                        </div>
-                                                        <!-- Harga Modal -->
-                                                        <div class="pb-2">
-                                                            <label
-                                                                :for="
-                                                                    'biaya' +
-                                                                    index +
-                                                                    '-' +
-                                                                    biayaIndex
-                                                                "
-                                                                >Harga Modal
-                                                                {{
-                                                                    biayaIndex +
-                                                                    1
-                                                                }}:</label
-                                                            >
-                                                            <input
-                                                                :id="
-                                                                    'biaya' +
-                                                                    index +
-                                                                    '-' +
-                                                                    biayaIndex
-                                                                "
-                                                                v-model="
-                                                                    biaya.harga_modal
-                                                                "
-                                                                class="w-full rounded-lg text-xs"
-                                                                placeholder="isi Nama Harga"
-                                                            />
-
-                                                            <p
-                                                                v-if="
-                                                                    !biaya.harga_modal
-                                                                "
-                                                                class="text-red-500"
-                                                            >
-                                                                Harga Modal
-                                                                tidak boleh
-                                                                kosong
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                    <div
-                                                        class="flex gap-2 pt-2 lg:hidden"
+                                                    <v-select
+                                                        :id="
+                                                            'name_satuan' +
+                                                            index
+                                                        "
+                                                        :options="satuan"
+                                                        v-model="
+                                                            item.name_satuan
+                                                        "
+                                                        class="w-full"
+                                                    />
+                                                    <p
+                                                        v-if="!item.name_satuan"
+                                                        class="text-red-500"
                                                     >
-                                                        <button
-                                                            type="button"
-                                                            class="btn bg-green-500 text-white hover:bg-green-700"
-                                                            @click="
-                                                                tambahBiaya(
-                                                                    index
-                                                                )
-                                                            "
-                                                        >
-                                                            +
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            class="btn bg-red-500 text-white hover:bg-red-700"
-                                                            @click="
-                                                                kurangiBiaya(
-                                                                    index
-                                                                )
-                                                            "
-                                                        >
-                                                            -
-                                                        </button>
-                                                    </div>
+                                                        Satuan tidak boleh
+                                                        kosong
+                                                    </p>
+                                                </div>
+                                                <div class="flex pt-2 gap-2">
+                                                    <button
+                                                        type="button"
+                                                        class="btn bg-green-500 text-white hover:bg-green-700"
+                                                        @click="tambahItem"
+                                                    >
+                                                        +
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        class="btn bg-red-500 text-white hover:bg-red-700"
+                                                        @click="kurangiItem"
+                                                    >
+                                                        -
+                                                    </button>
                                                 </div>
                                             </div>
-                                            <div
-                                                class="gap-2 pt-2 hidden lg:flex"
-                                            >
-                                                <button
-                                                    type="button"
-                                                    class="btn bg-green-500 text-white hover:bg-green-700"
-                                                    @click="tambahBiaya(index)"
+
+                                            <div class="flex gap-4">
+                                                <div
+                                                    class="flex flex-col w-full"
                                                 >
-                                                    +
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    class="btn bg-red-500 text-white hover:bg-red-700"
-                                                    @click="kurangiBiaya(index)"
+                                                    <div
+                                                        v-for="(
+                                                            biaya, biayaIndex
+                                                        ) in formInput[index]
+                                                            .biaya"
+                                                        :key="biayaIndex"
+                                                        class="w-full flex gap-2"
+                                                    >
+                                                        <div
+                                                            class="lg:grid grid-cols-2 xl:grid-cols-3 gap-4"
+                                                        >
+                                                            <div class="pb-2">
+                                                                <label
+                                                                    :for="
+                                                                        'biaya' +
+                                                                        index +
+                                                                        '-' +
+                                                                        biayaIndex
+                                                                    "
+                                                                    >Nama Biaya
+                                                                    {{
+                                                                        biayaIndex +
+                                                                        1
+                                                                    }}:</label
+                                                                >
+                                                                <v-select
+                                                                    :id="
+                                                                        'biaya' +
+                                                                        index +
+                                                                        '-' +
+                                                                        biayaIndex
+                                                                    "
+                                                                    v-model="
+                                                                        biaya.nama
+                                                                    "
+                                                                    :options="
+                                                                        apiData.biaya
+                                                                    "
+                                                                    class="w-full rounded-lg text-xs"
+                                                                />
+                                                                <p
+                                                                    v-if="
+                                                                        !biaya.nama
+                                                                    "
+                                                                    class="text-red-500"
+                                                                >
+                                                                    Nama Biaya
+                                                                    tidak boleh
+                                                                    kosong
+                                                                </p>
+                                                            </div>
+                                                            <div class="pb-2">
+                                                                <label
+                                                                    :for="
+                                                                        'biaya' +
+                                                                        index +
+                                                                        '-' +
+                                                                        biayaIndex
+                                                                    "
+                                                                    >Harga Jual
+                                                                    {{
+                                                                        biayaIndex +
+                                                                        1
+                                                                    }}:</label
+                                                                >
+                                                                <input
+                                                                    :id="
+                                                                        'biaya' +
+                                                                        index +
+                                                                        '-' +
+                                                                        biayaIndex
+                                                                    "
+                                                                    v-model="
+                                                                        biaya.harga
+                                                                    "
+                                                                    class="w-full rounded-lg text-xs"
+                                                                    placeholder="isi Nama Harga"
+                                                                />
+
+                                                                <p
+                                                                    v-if="
+                                                                        !biaya.harga
+                                                                    "
+                                                                    class="text-red-500"
+                                                                >
+                                                                    Harga Jual
+                                                                    tidak boleh
+                                                                    kosong
+                                                                </p>
+                                                            </div>
+
+                                                            <div class="pb-2">
+                                                                <label
+                                                                    :for="
+                                                                        'biaya' +
+                                                                        index +
+                                                                        '-' +
+                                                                        biayaIndex
+                                                                    "
+                                                                    >Harga Modal
+                                                                    {{
+                                                                        biayaIndex +
+                                                                        1
+                                                                    }}:</label
+                                                                >
+                                                                <input
+                                                                    :id="
+                                                                        'biaya' +
+                                                                        index +
+                                                                        '-' +
+                                                                        biayaIndex
+                                                                    "
+                                                                    v-model="
+                                                                        biaya.harga_modal
+                                                                    "
+                                                                    class="w-full rounded-lg text-xs"
+                                                                    placeholder="isi Nama Harga"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <div
+                                                            class="flex gap-2 pt-2 lg:hidden"
+                                                        >
+                                                            <button
+                                                                type="button"
+                                                                class="btn bg-green-500 text-white hover:bg-green-700"
+                                                                @click="
+                                                                    tambahBiaya(
+                                                                        index
+                                                                    )
+                                                                "
+                                                            >
+                                                                +
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                class="btn bg-red-500 text-white hover:bg-red-700"
+                                                                @click="
+                                                                    kurangiBiaya(
+                                                                        index
+                                                                    )
+                                                                "
+                                                            >
+                                                                -
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div
+                                                    class="gap-2 pt-2 hidden lg:flex"
                                                 >
-                                                    -
-                                                </button>
+                                                    <button
+                                                        type="button"
+                                                        class="btn bg-green-500 text-white hover:bg-green-700"
+                                                        @click="
+                                                            tambahBiaya(index)
+                                                        "
+                                                    >
+                                                        +
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        class="btn bg-red-500 text-white hover:bg-red-700"
+                                                        @click="
+                                                            kurangiBiaya(index)
+                                                        "
+                                                    >
+                                                        -
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -1303,8 +1362,15 @@ export default defineComponent({
                                                         :class="[
                                                             'w-full lg:grid gap-4',
                                                             {
-                                                                'grid-cols-2': !matchingUser.company.includes(selectedMarker.name_company),
-                    'xl:grid-cols-3': matchingUser.company.includes(selectedMarker.name_company) && biayaItem.harga_modal,
+                                                                'grid-cols-2':
+                                                                    !matchingUser.company.includes(
+                                                                        selectedMarker.name_company
+                                                                    ),
+                                                                'xl:grid-cols-3':
+                                                                    matchingUser.company.includes(
+                                                                        selectedMarker.name_company
+                                                                    ) &&
+                                                                    biayaItem.harga_modal,
                                                             },
                                                         ]"
                                                     >
@@ -1445,7 +1511,7 @@ export default defineComponent({
                                                                 placeholder="isi Nama Harga"
                                                                 type="number"
                                                             />
-                                                            <p
+                                                            <!-- <p
                                                                 v-if="
                                                                     !biayaItem.harga_modal
                                                                 "
@@ -1454,7 +1520,7 @@ export default defineComponent({
                                                                 Harga Modal
                                                                 tidak boleh
                                                                 kosong
-                                                            </p>
+                                                            </p> -->
                                                         </div>
                                                     </div>
                                                     <div
