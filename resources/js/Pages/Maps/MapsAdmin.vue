@@ -49,6 +49,7 @@ export default defineComponent({
         // const customer = ref([]);
         const satuan = ref([]);
         const biaya = ref([]);
+        const jenis_barang = ref([]);
         const matchingUser = ref(null);
         const customerOptions = reactive([]);
 
@@ -103,6 +104,7 @@ export default defineComponent({
                 name_agent: null,
                 name_customer: null,
                 name_satuan: null,
+                jenis_barang_name: null,
                 // biaya: [{ nama: null, harga: "", harga_modal: "" }],
                 items: [
                     {
@@ -122,6 +124,7 @@ export default defineComponent({
                 input.name_agent = null;
                 input.name_customer = null;
                 input.name_satuan = null;
+                input.jenis_barang_name = null;
                 input.items.forEach((item) => {
                     item.name_satuan = null;
                     item.biaya.forEach((biaya) => {
@@ -217,6 +220,7 @@ export default defineComponent({
                     name_company: clickedMarker.name_company,
                     name_penerima: clickedMarker.name_penerima,
                     name_agent: clickedMarker.name_agent,
+                    jenis_barang_name: clickedMarker.jenis_barang_name,
                     name_customer: clickedMarker.name_customer,
                     // satuan: clickedMarker.satuan,
                     satuan: clickedMarker.satuan.map((satuan) => ({
@@ -374,6 +378,19 @@ export default defineComponent({
             }
         };
 
+        const fetchJenisBarang = async () => {
+            try {
+                const response = await axios.get("/jenis_barang");
+                const data = response.data;
+                jenis_barang.value = data.map(
+                    (jenis_barang) => jenis_barang.jenis_barang_name
+                );
+                // console.log(jenis_barang.value);
+            } catch (error) {
+                console.error("Error fetching data:", error);
+            }
+        };
+
         const fetchCustomer = async () => {
             try {
                 const response = await axios.get("/company");
@@ -422,6 +439,7 @@ export default defineComponent({
                 items: [
                     {
                         name_satuan: null,
+                        jenis_barang: null,
                         biaya: [{ nama: "", harga: "", harga_modal: "" }],
                     },
                 ],
@@ -437,6 +455,7 @@ export default defineComponent({
         const tambahItem = (customerIndex) => {
             formInput.value[customerIndex].items.push({
                 name_satuan: null,
+                jenis_barang: null,
                 biaya: [{ nama: "", harga: "", harga_modal: "" }],
             });
         };
@@ -531,6 +550,8 @@ export default defineComponent({
                                     name_customer: entry.name_customer || null,
                                     satuan: (entry.items || []).map((item) => ({
                                         name_satuan: item.name_satuan || null,
+                                        jenis_barang_name:
+                                            item.jenis_barang_name || null,
                                         biaya: (item.biaya || []).map(
                                             (biaya) => ({
                                                 name_biaya: biaya.nama || "",
@@ -748,6 +769,7 @@ export default defineComponent({
                         lastForm.items.every(
                             (item) =>
                                 !item.name_satuan &&
+                                !item.jenis_barang_name &&
                                 item.biaya.every(
                                     (biaya) =>
                                         !biaya.nama &&
@@ -779,6 +801,7 @@ export default defineComponent({
             fetchUser();
             fetchUnit();
             fetchBiaya();
+            fetchJenisBarang();
             loadMapPosition();
             handleMapIdle();
             // Then call fetchData every 30 seconds
@@ -827,6 +850,7 @@ export default defineComponent({
             tambahBiayaBiaya,
             kurangiBiayaBiaya,
             options,
+            jenis_barang,
             handleMapIdle,
             saveMapPosition,
             loadMapPosition,
@@ -984,13 +1008,15 @@ export default defineComponent({
                 class="absolute z-10 inset-0 flex items-center justify-center 2xl:pl-[40%] text-xs pt-[86px] md:pt-24 lg:pt-8"
             >
                 <div
-                    class="bg-white w-96 md:w-[1024px] lg:w-[512px] xl:w-[660px] h-auto rounded-xl p-8 relative shadow-xl mx-4 md:mx-24"
+                    class="bg-white w-96 md:w-[1024px] lg:w-[512px] xl:w-[660px] h-auto rounded-xl p-6 relative shadow-xl mx-4 md:mx-24"
                 >
                     <form @submit.prevent="saveFormData">
-                        <h1 class="pb-4 w-[90%]">Alamat : {{ address }}</h1>
+                        <h1 class="pb-4 w-[90%] px-2">
+                            Alamat : {{ address }}
+                        </h1>
                         <div class="overflow-y-scroll max-h-96 pr-4">
                             <div class="pb-2">
-                                <div class="w-full pb-2">
+                                <div class="w-full pb-2 px-2">
                                     <label for="name_agent" class="pb-2"
                                         >Nama Agent:</label
                                     >
@@ -1007,7 +1033,7 @@ export default defineComponent({
                                         Agent tidak boleh kosong
                                     </p>
                                 </div>
-                                <div class="pb-4">
+                                <div class="pb-4 px-2">
                                     <label for="name_penerima" class="pb-2"
                                         >Nama Penerima:</label
                                     >
@@ -1026,98 +1052,49 @@ export default defineComponent({
                                 </div>
                             </div>
 
-                            <div
-                                class="p-4 border rounded mb-4"
-                                v-for="(customer, customerIndex) in formInput"
-                                :key="customerIndex"
-                            >
-                                <div class="w-full flex gap-4">
-                                    <div class="w-full pb-2">
-                                        <label
-                                            :for="
-                                                'name_customer' + customerIndex
-                                            "
-                                            class="pb-2"
-                                            >Nama Customer:</label
-                                        >
-                                        <v-select
-                                            v-if="customerOptions.length > 0"
-                                            :id="
-                                                'name_customer' + customerIndex
-                                            "
-                                            :options="customerOptions"
-                                            v-model="customer.name_customer"
-                                            class="w-full"
-                                        />
-
-                                        <p
-                                            v-if="!customer.name_customer"
-                                            class="text-red-500"
-                                        >
-                                            Customer tidak boleh kosong
-                                        </p>
-                                    </div>
-                                    <div class="flex pt-2 gap-2">
-                                        <button
-                                            type="button"
-                                            class="btn bg-green-500 text-white hover:bg-green-700"
-                                            @click="tambahCustomer"
-                                        >
-                                            +
-                                        </button>
-                                        <button
-                                            type="button"
-                                            class="btn bg-red-500 text-white hover:bg-red-700"
-                                            @click="
-                                                kurangiCustomer(customerIndex)
-                                            "
-                                        >
-                                            -
-                                        </button>
-                                    </div>
-                                </div>
-
+                            <div class="px-2">
                                 <div
-                                    v-for="(item, index) in customer.items"
-                                    :key="index"
+                                    class="p-4 border rounded mb-4"
+                                    v-for="(
+                                        customer, customerIndex
+                                    ) in formInput"
+                                    :key="customerIndex"
                                 >
-                                    <div class="flex gap-2 md:gap-4 pb-2">
-                                        <div class="w-full">
+                                    <div class="w-full flex gap-4">
+                                        <div class="w-full pb-2">
                                             <label
                                                 :for="
-                                                    'name_satuan' +
-                                                    customerIndex +
-                                                    '-' +
-                                                    index
+                                                    'name_customer' +
+                                                    customerIndex
                                                 "
                                                 class="pb-2"
-                                                >Satuan:</label
+                                                >Nama Customer:</label
                                             >
                                             <v-select
-                                                :id="
-                                                    'name_satuan' +
-                                                    customerIndex +
-                                                    '-' +
-                                                    index
+                                                v-if="
+                                                    customerOptions.length > 0
                                                 "
-                                                :options="satuan"
-                                                v-model="item.name_satuan"
+                                                :id="
+                                                    'name_customer' +
+                                                    customerIndex
+                                                "
+                                                :options="customerOptions"
+                                                v-model="customer.name_customer"
                                                 class="w-full"
                                             />
+
                                             <p
-                                                v-if="!item.name_satuan"
+                                                v-if="!customer.name_customer"
                                                 class="text-red-500"
                                             >
-                                                Satuan tidak boleh kosong
+                                                Customer tidak boleh kosong
                                             </p>
                                         </div>
                                         <div class="flex pt-2 gap-2">
                                             <button
                                                 type="button"
                                                 class="btn bg-green-500 text-white hover:bg-green-700"
-                                                @click="
-                                                    tambahItem(customerIndex)
-                                                "
+                                                @click="tambahCustomer"
                                             >
                                                 +
                                             </button>
@@ -1125,9 +1102,8 @@ export default defineComponent({
                                                 type="button"
                                                 class="btn bg-red-500 text-white hover:bg-red-700"
                                                 @click="
-                                                    kurangiItem(
-                                                        customerIndex,
-                                                        index
+                                                    kurangiCustomer(
+                                                        customerIndex
                                                     )
                                                 "
                                             >
@@ -1137,153 +1113,262 @@ export default defineComponent({
                                     </div>
 
                                     <div
-                                        v-for="(
-                                            biaya, biayaIndex
-                                        ) in item.biaya"
-                                        :key="biayaIndex"
-                                        class="flex gap-4"
+                                        v-for="(item, index) in customer.items"
+                                        :key="index"
                                     >
-                                        <div
-                                            class="lg:grid grid-cols-2 xl:grid-cols-3 gap-4"
-                                        >
-                                            <div class="pb-2">
-                                                <label
-                                                    :for="
-                                                        'biaya' +
-                                                        customerIndex +
-                                                        '-' +
-                                                        index +
-                                                        '-' +
-                                                        biayaIndex
-                                                    "
-                                                    >Nama Biaya
-                                                    {{ biayaIndex + 1 }}:</label
-                                                >
-                                                <v-select
-                                                    :id="
-                                                        'biaya' +
-                                                        customerIndex +
-                                                        '-' +
-                                                        index +
-                                                        '-' +
-                                                        biayaIndex
-                                                    "
-                                                    v-model="biaya.nama"
-                                                    :options="apiData.biaya"
-                                                    class="w-full rounded-lg text-xs"
-                                                />
-                                                <p
-                                                    v-if="!biaya.nama"
-                                                    class="text-red-500"
-                                                >
-                                                    Nama Biaya tidak boleh
-                                                    kosong
-                                                </p>
+                                        <div class="flex gap-2 md:gap-4 pb-2">
+                                            <div class="w-full flex gap-4">
+                                                <div class="w-full">
+                                                    <label
+                                                        :for="
+                                                            'name_satuan' +
+                                                            customerIndex +
+                                                            '-' +
+                                                            index
+                                                        "
+                                                        class="pb-2"
+                                                        >Satuan:</label
+                                                    >
+                                                    <v-select
+                                                        :id="
+                                                            'name_satuan' +
+                                                            customerIndex +
+                                                            '-' +
+                                                            index
+                                                        "
+                                                        :options="satuan"
+                                                        v-model="
+                                                            item.name_satuan
+                                                        "
+                                                        class="w-full"
+                                                    />
+                                                    <p
+                                                        v-if="!item.name_satuan"
+                                                        class="text-red-500"
+                                                    >
+                                                        Satuan tidak boleh
+                                                        kosong
+                                                    </p>
+                                                </div>
+                                                <div class="w-full">
+                                                    <label
+                                                        :for="
+                                                            'jenis_barang_name' +
+                                                            customerIndex +
+                                                            '-' +
+                                                            index
+                                                        "
+                                                        class="pb-2"
+                                                        >Jenis Barang:</label
+                                                    >
+                                                    <v-select
+                                                        :id="
+                                                            'jenis_barang_name' +
+                                                            customerIndex +
+                                                            '-' +
+                                                            index
+                                                        "
+                                                        :options="jenis_barang"
+                                                        v-model="
+                                                            item.jenis_barang_name
+                                                        "
+                                                        class="w-full"
+                                                    />
+                                                    <p
+                                                        v-if="
+                                                            !item.jenis_barang_name
+                                                        "
+                                                        class="text-red-500"
+                                                    >
+                                                        Jenis Barang tidak boleh
+                                                        kosong
+                                                    </p>
+                                                </div>
                                             </div>
-                                            <div class="pb-2">
-                                                <label
-                                                    :for="
-                                                        'harga' +
-                                                        customerIndex +
-                                                        '-' +
-                                                        index +
-                                                        '-' +
-                                                        biayaIndex
+                                            <div class="flex pt-2 gap-2">
+                                                <button
+                                                    type="button"
+                                                    class="btn bg-green-500 text-white hover:bg-green-700"
+                                                    @click="
+                                                        tambahItem(
+                                                            customerIndex
+                                                        )
                                                     "
-                                                    >Harga Jual
-                                                    {{ biayaIndex + 1 }}:</label
                                                 >
-                                                <input
-                                                    :id="
-                                                        'harga' +
-                                                        customerIndex +
-                                                        '-' +
-                                                        index +
-                                                        '-' +
-                                                        biayaIndex
+                                                    +
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    class="btn bg-red-500 text-white hover:bg-red-700"
+                                                    @click="
+                                                        kurangiItem(
+                                                            customerIndex,
+                                                            index
+                                                        )
                                                     "
-                                                    v-model="biaya.harga"
-                                                    class="w-full rounded-lg text-xs"
-                                                    placeholder="isi Nama Harga"
-                                                />
-                                                <p
-                                                    v-if="!biaya.harga"
-                                                    class="text-red-500"
                                                 >
-                                                    Harga Jual tidak boleh
-                                                    kosong
-                                                </p>
-                                            </div>
-                                            <div class="pb-2">
-                                                <label
-                                                    :for="
-                                                        'harga_modal' +
-                                                        customerIndex +
-                                                        '-' +
-                                                        index +
-                                                        '-' +
-                                                        biayaIndex
-                                                    "
-                                                    >Harga Modal
-                                                    {{ biayaIndex + 1 }}:</label
-                                                >
-                                                <input
-                                                    :id="
-                                                        'harga_modal' +
-                                                        customerIndex +
-                                                        '-' +
-                                                        index +
-                                                        '-' +
-                                                        biayaIndex
-                                                    "
-                                                    v-model="biaya.harga_modal"
-                                                    class="w-full rounded-lg text-xs"
-                                                    placeholder="isi Nama Harga"
-                                                />
+                                                    -
+                                                </button>
                                             </div>
                                         </div>
-                                        <div class="flex gap-2 pt-2">
-                                            <button
-                                                type="button"
-                                                class="btn bg-green-500 text-white hover:bg-green-700"
-                                                @click="
-                                                    tambahBiaya(
-                                                        customerIndex,
-                                                        index
-                                                    )
-                                                "
+
+                                        <div
+                                            v-for="(
+                                                biaya, biayaIndex
+                                            ) in item.biaya"
+                                            :key="biayaIndex"
+                                            class="flex gap-4"
+                                        >
+                                            <div
+                                                class="lg:grid grid-cols-2 xl:grid-cols-3 gap-4"
                                             >
-                                                +
-                                            </button>
-                                            <button
-                                                type="button"
-                                                class="btn bg-red-500 text-white hover:bg-red-700"
-                                                @click="
-                                                    kurangiBiaya(
-                                                        customerIndex,
-                                                        index,
-                                                        biayaIndex
-                                                    )
-                                                "
-                                            >
-                                                -
-                                            </button>
+                                                <div class="pb-2">
+                                                    <label
+                                                        :for="
+                                                            'biaya' +
+                                                            customerIndex +
+                                                            '-' +
+                                                            index +
+                                                            '-' +
+                                                            biayaIndex
+                                                        "
+                                                        >Nama Biaya
+                                                        {{
+                                                            biayaIndex + 1
+                                                        }}:</label
+                                                    >
+                                                    <v-select
+                                                        :id="
+                                                            'biaya' +
+                                                            customerIndex +
+                                                            '-' +
+                                                            index +
+                                                            '-' +
+                                                            biayaIndex
+                                                        "
+                                                        v-model="biaya.nama"
+                                                        :options="apiData.biaya"
+                                                        class="w-full rounded-lg text-xs"
+                                                    />
+                                                    <p
+                                                        v-if="!biaya.nama"
+                                                        class="text-red-500"
+                                                    >
+                                                        Nama Biaya tidak boleh
+                                                        kosong
+                                                    </p>
+                                                </div>
+                                                <div class="pb-2">
+                                                    <label
+                                                        :for="
+                                                            'harga' +
+                                                            customerIndex +
+                                                            '-' +
+                                                            index +
+                                                            '-' +
+                                                            biayaIndex
+                                                        "
+                                                        >Harga Jual
+                                                        {{
+                                                            biayaIndex + 1
+                                                        }}:</label
+                                                    >
+                                                    <input
+                                                        :id="
+                                                            'harga' +
+                                                            customerIndex +
+                                                            '-' +
+                                                            index +
+                                                            '-' +
+                                                            biayaIndex
+                                                        "
+                                                        v-model="biaya.harga"
+                                                        class="w-full border-gray-950 border-opacity-25 focus:outline-none focus:ring focus:border-blue-300 rounded text-xs"
+                                                        placeholder="isi Nama Harga"
+                                                    />
+                                                    <p
+                                                        v-if="!biaya.harga"
+                                                        class="text-red-500"
+                                                    >
+                                                        Harga Jual tidak boleh
+                                                        kosong
+                                                    </p>
+                                                </div>
+                                                <div class="pb-2">
+                                                    <label
+                                                        :for="
+                                                            'harga_modal' +
+                                                            customerIndex +
+                                                            '-' +
+                                                            index +
+                                                            '-' +
+                                                            biayaIndex
+                                                        "
+                                                        >Harga Modal
+                                                        {{
+                                                            biayaIndex + 1
+                                                        }}:</label
+                                                    >
+                                                    <input
+                                                        :id="
+                                                            'harga_modal' +
+                                                            customerIndex +
+                                                            '-' +
+                                                            index +
+                                                            '-' +
+                                                            biayaIndex
+                                                        "
+                                                        v-model="
+                                                            biaya.harga_modal
+                                                        "
+                                                        class="w-full border-gray-950 border-opacity-25 focus:outline-none focus:ring focus:border-blue-300 rounded text-xs"
+                                                        placeholder="isi Nama Harga"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div class="flex gap-2 pt-2">
+                                                <button
+                                                    type="button"
+                                                    class="btn bg-green-500 text-white hover:bg-green-700"
+                                                    @click="
+                                                        tambahBiaya(
+                                                            customerIndex,
+                                                            index
+                                                        )
+                                                    "
+                                                >
+                                                    +
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    class="btn bg-red-500 text-white hover:bg-red-700"
+                                                    @click="
+                                                        kurangiBiaya(
+                                                            customerIndex,
+                                                            index,
+                                                            biayaIndex
+                                                        )
+                                                    "
+                                                >
+                                                    -
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="pt-2">
+                            <div class="pt-2 px-2">
                                 <label for="notes" class="pb-2">Catatan:</label>
                                 <textarea
                                     v-model="formInput.notes"
                                     id="notes"
-                                    class="w-full mb-2 p-2 border focus:outline-none focus:ring focus:border-blue-300 h-16 md:h-16 rounded-lg text-sm"
+                                    class="w-full mb-2 p-2 border focus:outline-none focus:ring focus:border-blue-300 h-16 md:h-20 rounded-lg text-sm border-gray-950 border-opacity-25"
                                 />
                             </div>
                         </div>
 
-                        <div class="flex gap-4 justify-center">
+                        <div class="flex gap-4 justify-center pt-4">
                             <button
                                 type="submit"
                                 class="bg-blue-500 text-white py-2 px-4 rounded-md w-full"
