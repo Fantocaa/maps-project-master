@@ -98,7 +98,7 @@ class MdMapsController extends Controller
      */
     public function store(Storemd_mapsRequest $request)
     {
-        // dd($request);
+        dd($request);
 
         $company = md_company::firstWhere('name_company', $request->name_company);
         if (!$company) {
@@ -158,9 +158,7 @@ class MdMapsController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(md_maps $md_maps)
-    {
-    }
+    public function show(md_maps $md_maps) {}
 
     /**
      * Show the form for editing the specified resource.
