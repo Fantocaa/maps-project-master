@@ -36,10 +36,15 @@ const biayaForm = useForm({
     biaya_name: "",
 });
 
+const jenisbarangForm = useForm({
+    jenis_barang_name: "",
+});
+
 const companyData = ref(null);
 const agentData = ref(null);
 const unitData = ref(null);
 const biayaData = ref(null);
+const JenisBarangData = ref(null);
 
 const fetchDataCompany = async () => {
     const response = await axios.get("/company");
@@ -61,6 +66,11 @@ const fetchDataBiaya = async () => {
     biayaData.value = response.data;
 };
 
+const fetchDataJenisBarang = async () => {
+    const response = await axios.get("/jenis_barang");
+    JenisBarangData.value = response.data;
+};
+
 const submitCompanyForm = async () => {
     try {
         await companyForm.post("/manage/company/new");
@@ -71,7 +81,6 @@ const submitCompanyForm = async () => {
         alert("Data Saving Failed. Try Again!");
     }
 };
-
 const submitAgentForm = async () => {
     try {
         await agentForm.post("/manage/agent/new");
@@ -102,6 +111,16 @@ const submitBiayaForm = async () => {
         alert("Data Saving Failed. Try Again!");
     }
 };
+const submitJenisBarangForm = async () => {
+    try {
+        await jenisbarangForm.post("/manage/jenisbarang/new");
+        alert("Data Saving Success");
+        closeModal("jenis");
+        await fetchDataJenisBarang();
+    } catch (error) {
+        alert("Data Saving Failed. Try Again!");
+    }
+};
 
 const closeModal = (modalId) => {
     const modal = document.getElementById(modalId);
@@ -115,6 +134,7 @@ onMounted(async () => {
     fetchDataAgent();
     fetchDataUnit();
     fetchDataBiaya();
+    fetchDataJenisBarang();
 });
 
 const columnsCompany = [
@@ -191,6 +211,26 @@ const columnsBiaya = [
         title: "Actions",
         render: function (data, type, row) {
             return `<a href="/manage/biaya/${data.id}/edit">
+                <button type="btn" class="btn btn-primary">
+            Edit</button></a>`;
+        },
+    },
+];
+
+const columnsJenisBarang = [
+    {
+        data: "id",
+        title: "No",
+        render: function (data, type, row, meta) {
+            return meta.row + 1;
+        },
+    },
+    { data: "jenis_barang_name", title: "Name" },
+    {
+        data: null,
+        title: "Actions",
+        render: function (data, type, row) {
+            return `<a href="/manage/jenisbarang/${data.id}/edit">
                 <button type="btn" class="btn btn-primary">
             Edit</button></a>`;
         },
@@ -321,6 +361,34 @@ const columnsBiaya = [
                         </form>
                     </div>
                 </dialog>
+                <dialog id="jenis" class="modal">
+                    <div class="modal-box bg-dark-eval-0">
+                        <form method="dialog">
+                            <button
+                                class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
+                            >
+                                ✕
+                            </button>
+                        </form>
+                        <form @submit.prevent="submitJenisBarangForm">
+                            <label
+                                for="jenis_barang_name"
+                                class="block text-sm font-medium"
+                                >Jenis Barang Name</label
+                            >
+                            <input
+                                type="text"
+                                id="jenis_barang_name"
+                                name="jenis_barang_name"
+                                v-model="jenisbarangForm.jenis_barang_name"
+                                class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm my-4 text-dark-eval-0"
+                            />
+                            <button type="submit" class="mt-2 btn btn-primary">
+                                Submit
+                            </button>
+                        </form>
+                    </div>
+                </dialog>
             </div>
         </template>
         <template #default>
@@ -364,7 +432,7 @@ const columnsBiaya = [
 
                 <div class="border-dark-eval-2 border p-4 rounded-xl">
                     <div class="flex justify-between mb-8 items-center">
-                        <h1 class="font-semibold text-xl">Unit List</h1>
+                        <h1 class="font-semibold text-xl">Satuan Unit List</h1>
                         <button
                             class="btn border border-dark-eval-2"
                             onclick="unit.showModal()"
@@ -382,7 +450,7 @@ const columnsBiaya = [
 
                 <div class="border-dark-eval-2 border p-4 rounded-xl">
                     <div class="flex justify-between mb-8 items-center">
-                        <h1 class="font-semibold text-xl">Biaya List</h1>
+                        <h1 class="font-semibold text-xl">Nama Biaya List</h1>
                         <button
                             class="btn border border-dark-eval-2"
                             onclick="biaya.showModal()"
@@ -393,6 +461,24 @@ const columnsBiaya = [
                     <DataTable
                         :data="biayaData"
                         :columns="columnsBiaya"
+                        class="table table-hover table-striped"
+                        width="100%"
+                    />
+                </div>
+
+                <div class="border-dark-eval-2 border p-4 rounded-xl">
+                    <div class="flex justify-between mb-8 items-center">
+                        <h1 class="font-semibold text-xl">Jenis Barang List</h1>
+                        <button
+                            class="btn border border-dark-eval-2"
+                            onclick="jenis.showModal()"
+                        >
+                            Add New Jenis Barang
+                        </button>
+                    </div>
+                    <DataTable
+                        :data="JenisBarangData"
+                        :columns="columnsJenisBarang"
                         class="table table-hover table-striped"
                         width="100%"
                     />

@@ -4,6 +4,7 @@ use App\Http\Controllers\MdAgentController;
 use App\Http\Controllers\MdBiayaController;
 use App\Http\Controllers\MdBiayaNameController;
 use App\Http\Controllers\MdCompanyController;
+use App\Http\Controllers\MdJenisBarangController;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Foundation\Application;
@@ -68,6 +69,11 @@ Route::middleware('auth')->group(function () {
     Route::patch('/manage/biaya/update', [MdBiayaNameController::class, 'update_biaya'])->name('biaya.update');
     Route::delete('/manage/biaya/{id}/delete', [MdBiayaNameController::class, 'destroy_biaya'])->name('biaya.destroy');
 
+    Route::post('/manage/jenisbarang/new', [MdJenisBarangController::class, 'store'])->name('jenisbarang.store');
+    Route::get('/manage/jenisbarang/{id}/edit', [MdJenisBarangController::class, 'edit_jenisbarang'])->name('jenisbarang.edit');
+    Route::patch('/manage/jenisbarang/update', [MdJenisBarangController::class, 'update_jenisbarang'])->name('jenisbarang.update');
+    Route::delete('/manage/jenisbarang/{id}/delete', [MdJenisBarangController::class, 'destroy_jenisbarang'])->name('jenisbarang.destroy');
+
     // Route::resource('maps', MdMapsController::class);
 
     Route::get('maps/index', [MdMapsController::class, 'index'])->name('maps.index');
@@ -87,6 +93,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/agent', [MdAgentController::class, 'index'])->name('index.agent');
     Route::get('/unit', [MdSatuanController::class, 'index'])->name('index.unit');
     Route::get('/biaya_name', [MdBiayaNameController::class, 'index'])->name('index.biaya_name');
+    Route::get('/jenis_barang', [MdJenisBarangController::class, 'index'])->name('index.jenisbarang_name');
 });
 
 Route::get('/components/buttons', function () {
