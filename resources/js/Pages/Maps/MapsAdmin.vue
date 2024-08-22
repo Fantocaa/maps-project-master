@@ -200,19 +200,27 @@ export default defineComponent({
         };
 
         const handleMarkerClick = (clickedMarker) => {
+            // Temukan indeks marker yang sesuai
             const index = markers.value.findIndex(
                 (marker) =>
                     marker.position.lat === clickedMarker.position.lat &&
                     marker.position.lng === clickedMarker.position.lng
             );
 
-            // Check if the clicked marker has an ID
-            if (!markers.value[index].id) {
-                // Marker does not have an ID, remove it directly
+            if (index === -1) {
+                console.error("Marker not found");
+                return;
+            }
+
+            const clickedMarkerData = markers.value[index];
+
+            if (!clickedMarkerData.id) {
+                // Marker tidak memiliki ID, hapus langsung
                 markers.value.splice(index, 1);
             } else {
+                // Struktur data terbaru dengan multiple customers
                 selectedMarker.value = {
-                    id: markers.value[index].id,
+                    id: clickedMarkerData.id,
                     notes: clickedMarker.notes,
                     name: clickedMarker.name,
                     date: clickedMarker.date,
@@ -220,40 +228,44 @@ export default defineComponent({
                     name_company: clickedMarker.name_company,
                     name_penerima: clickedMarker.name_penerima,
                     name_agent: clickedMarker.name_agent,
-                    jenis_barang_name: clickedMarker.jenis_barang_name,
-                    name_customer: clickedMarker.name_customer,
-                    // satuan: clickedMarker.satuan,
-                    satuan: clickedMarker.satuan.map((satuan) => ({
-                        name_satuan: satuan.name_satuan,
-                        biaya: satuan.biaya.map((biaya) => ({
-                            name_biaya: biaya.name_biaya,
-                            harga: biaya.harga,
-                            harga_modal: biaya.harga_modal,
+                    // name_customer: clickedMarker.name_customer,
+                    customers: clickedMarker.customers.map((customer) => ({
+                        name_customer: customer.name_customer,
+                        satuan: customer.satuan.map((satuan) => ({
+                            name_satuan: satuan.name_satuan,
+                            jenis_barang_name: satuan.jenis_barang_name,
+                            biaya: satuan.biaya.map((biaya) => ({
+                                name_biaya: biaya.name_biaya,
+                                harga: biaya.harga,
+                                harga_modal: biaya.harga_modal,
+                            })),
+                            isSaved: true, // Menandakan bahwa data ini sudah disimpan di database
                         })),
                     })),
                     showForm: true,
                 };
-                // console.log(selectedMarker.value);
+
                 $("#showmarker").show();
             }
 
-            // zoom.value = 16;
+            // console.log(selectedMarker.value);
+
+            // Update zoom dan center
             center.value = clickedMarker.position;
 
-            // Manually update the map
             if (mapInstance.value) {
                 mapInstance.value.setZoom(zoom.value);
                 mapInstance.value.setCenter(center.value);
             }
 
-            // Call getReverseGeocoding with the clicked marker's position
+            // Panggil getReverseGeocoding dengan posisi marker yang diklik
             getReverseGeocoding(
                 clickedMarker.position.lat,
                 clickedMarker.position.lng
             )
                 .then((addr) => {
                     if (addr) {
-                        address.value = addr; // Update the address variable with the received address
+                        address.value = addr; // Update address dengan alamat yang diterima
                     }
                 })
                 .catch((error) => console.error(error));
@@ -323,41 +335,63 @@ export default defineComponent({
                 let data = await response.json();
 
                 // Filter data berdasarkan name_company yang sama dengan name_company dari matchingUser
+                // data = data.filter(
+                //     (map) =>
+                //         matchingUser.value.view_company.includes(
+                //             map.name_company
+                //         ) ||
+                //         matchingUser.value.company.includes(map.name_company) ||
+                //         matchingUser.value.company.includes(map.name_customer)
+                // );
+
                 data = data.filter(
                     (map) =>
                         matchingUser.value.view_company.includes(
                             map.name_company
-                        ) ||
-                        matchingUser.value.company.includes(map.name_company) ||
-                        matchingUser.value.company.includes(map.name_customer)
+                        )
+
+                    // ||
+                    // matchingUser.value.company.includes(map.name_company) ||
+                    // matchingUser.value.company.some((company) =>
+                    //     map.customers.some(
+                    //         (customer) => customer.name_customer === company
+                    //     )
+                    // )
                 );
 
                 // console.log(data);
 
-                markers.value = data.map((map) => ({
-                    position: {
-                        lat: parseFloat(map.lat),
-                        lng: parseFloat(map.lng),
-                    },
-                    id: map.id,
-                    notes: map.notes,
-                    name: map.name,
-                    date: map.date,
-                    lokasi: map.lokasi,
-                    name_agent: map.name_agent,
-                    name_customer: map.name_customer,
-                    name_company: map.name_company,
-                    name_penerima: map.name_penerima,
-                    satuan: map.satuan.map((satuan) => ({
-                        name_satuan: satuan.name_satuan,
-                        biaya: satuan.biaya.map((biaya) => ({
-                            name_biaya: biaya.name_biaya,
-                            harga: biaya.harga,
-                            harga_modal: biaya.harga_modal,
+                markers.value = data.map((map) => {
+                    return {
+                        position: {
+                            lat: parseFloat(map.lat),
+                            lng: parseFloat(map.lng),
+                        },
+                        id: map.id,
+                        notes: map.notes,
+                        name: map.name,
+                        date: map.date,
+                        lokasi: map.lokasi,
+                        name_agent: map.name_agent,
+                        name_company: map.name_company,
+                        name_penerima: map.name_penerima,
+                        // Menggunakan seluruh data customers
+                        customers: map.customers.map((customer) => ({
+                            name_customer: customer.name_customer || null,
+                            satuan: customer.satuan.map((satuan) => ({
+                                name_satuan: satuan.name_satuan || null,
+                                jenis_barang_name:
+                                    satuan.jenis_barang_name || null,
+                                biaya: satuan.biaya.map((biaya) => ({
+                                    name_biaya: biaya.name_biaya || null,
+                                    harga: biaya.harga || null,
+                                    harga_modal: biaya.harga_modal || null,
+                                })),
+                            })),
                         })),
-                    })),
-                    showForm: false,
-                }));
+                        showForm: false,
+                    };
+                });
 
                 // Simpan data ke localStorage
                 // localStorage.setItem("markers", JSON.stringify(markers.value));
@@ -487,16 +521,53 @@ export default defineComponent({
 
         //showmarker
 
-        const tambahItemBiaya = () => {
-            selectedMarker.value.satuan.push({
-                name_satuan: null,
-                biaya: [{ name_biaya: "", harga: "", harga_modal: "" }],
+        const tambahItemCustomer = () => {
+            selectedMarker.value.customers.push({
+                name_customer: "", // Nama customer baru bisa ditambahkan di sini
+                satuan: [
+                    {
+                        name_satuan: "", // Nama satuan baru
+                        jenis_barang_name: "", // Nama jenis barang baru
+                        biaya: [
+                            {
+                                name_biaya: "", // Nama biaya baru
+                                harga: "", // Harga baru
+                                harga_modal: "", // Harga modal baru
+                            },
+                        ],
+                    },
+                ],
             });
         };
 
-        const kurangiItemBiaya = () => {
-            if (selectedMarker.value.satuan.length > 1) {
-                selectedMarker.value.satuan.pop();
+        const kurangiItemCustomer = (customerIndex) => {
+            if (selectedMarker.value.customers.length > 1) {
+                selectedMarker.value.customers.splice(customerIndex, 1);
+            }
+        };
+
+        const tambahItemBiaya = () => {
+            // Pastikan ada setidaknya satu customer
+            if (selectedMarker.value.customers.length > 0) {
+                // Tambahkan satuan baru ke customer pertama (index 0)
+                selectedMarker.value.customers[0].satuan.push({
+                    name_satuan: null,
+                    jenis_barang_name: "",
+                    biaya: [{ name_biaya: "", harga: "", harga_modal: "" }],
+                    isSaved: false,
+                });
+            }
+        };
+
+        const kurangiItemBiaya = (index) => {
+            if (
+                selectedMarker.value &&
+                selectedMarker.value.customers &&
+                selectedMarker.value.customers.length > 0 &&
+                selectedMarker.value.customers[0].satuan &&
+                selectedMarker.value.customers[0].satuan.length > 1
+            ) {
+                selectedMarker.value.customers[0].satuan.splice(index, 1);
             }
         };
 
@@ -600,7 +671,7 @@ export default defineComponent({
                             ),
                         },
                         url: "/maps/store",
-                        data: JSON.stringify({ markerData: dataToSend }),
+                        data: JSON.stringify(dataToSend),
                         success: function (data) {
                             alert("Data saved : Success", data);
 
@@ -654,7 +725,24 @@ export default defineComponent({
             if (selectedMarker.value && selectedMarker.value.id) {
                 const formData = {
                     notes: selectedMarker.value.notes,
-                    satuan: selectedMarker.value.satuan,
+                    // satuan: selectedMarker.value.satuan,
+                    satuan: selectedMarker.value.customers.flatMap(
+                        (customer) => customer.satuan
+                    ),
+                    customers: selectedMarker.value.customers.map(
+                        (customer) => ({
+                            name_customer: customer.name_customer,
+                            satuan: customer.satuan.map((satuan) => ({
+                                name_satuan: satuan.name_satuan,
+                                jenis_barang_name: satuan.jenis_barang_name,
+                                biaya: satuan.biaya.map((biaya) => ({
+                                    name_biaya: biaya.name_biaya,
+                                    harga: biaya.harga,
+                                    harga_modal: biaya.harga_modal,
+                                })),
+                            })),
+                        })
+                    ),
                 };
 
                 $.ajax({
@@ -669,10 +757,14 @@ export default defineComponent({
                     data: JSON.stringify(formData),
                     success: function (data) {
                         alert("Data saved : Success", data);
+
                         // Update the notes of the selectedMarker directly
                         selectedMarker.value.notes = formInput.notes;
-                        selectedMarker.value.satuan = formInput.satuan;
+                        // selectedMarker.value.satuan = formInput.satuan;
+                        selectedMarker.value.customers = formData.customers;
+
                         $("#showmarker").hide();
+
                         fetchData();
                         fetchUser();
                         fetchAgent();
@@ -845,6 +937,8 @@ export default defineComponent({
             selectedMarker,
             mapWasMounted,
             saveFormData,
+            tambahItemCustomer,
+            kurangiItemCustomer,
             tambahItemBiaya,
             kurangiItemBiaya,
             tambahBiayaBiaya,
@@ -1284,7 +1378,7 @@ export default defineComponent({
                                                         "
                                                         v-model="biaya.harga"
                                                         class="w-full border-gray-950 border-opacity-25 focus:outline-none focus:ring focus:border-blue-300 rounded text-xs"
-                                                        placeholder="isi Nama Harga"
+                                                        placeholder="isi Total Harga"
                                                     />
                                                     <p
                                                         v-if="!biaya.harga"
@@ -1414,410 +1508,573 @@ export default defineComponent({
                 style="display: none"
             >
                 <div
-                    class="bg-white w-full lg:w-[512px] xl:w-[660px] max-h-[1024px] rounded-xl p-8 relative shadow-xl mx-4 md:mx-24"
+                    class="bg-white w-full lg:w-[512px] xl:w-[660px] max-h-[1024px] rounded-xl p-6 relative shadow-xl mx-4 md:mx-24"
                 >
                     <form @submit.prevent="editSaveFormData">
                         <!-- <div class="overflow-y-scroll max-h-[448px]"> -->
-                        <h1 class="pb-4 w-[90%]">
+                        <h1 class="pb-4 w-[90%] px-2">
                             Alamat :
                             {{ selectedMarker.lokasi }}
                         </h1>
                         <div
                             class="max-h-[448px] xl:max-h-[384px] 2xl:max-h-[448px] overflow-auto"
                         >
-                            <h1 class="pb-4 w-[90%]">
+                            <h1 class="pb-4 w-[90%] px-2">
                                 Nama Penerima :
                                 {{ selectedMarker.name_penerima }}
                             </h1>
-                            <h1 class="pb-4 w-[90%]">
+                            <h1 class="pb-4 w-[90%] px-2">
                                 Nama Agent :
                                 {{ selectedMarker.name_agent }}
                             </h1>
-                            <h1 class="pb-4 w-[90%]">
+                            <!-- <h1 class="pb-4 w-[90%]">
                                 Nama Customer :
                                 {{ selectedMarker.name_customer }}
-                            </h1>
-                            <div>
+                            </h1> -->
+                            <div class="px-2">
                                 <div
-                                    class="pb-2"
+                                    class="p-4 border rounded mb-4"
                                     v-for="(
-                                        satuanItem, index
-                                    ) in selectedMarker.satuan"
-                                    :key="index"
+                                        customer, customerIndex
+                                    ) in selectedMarker.customers"
+                                    :key="customerIndex"
                                 >
-                                    <div>
-                                        <div class="flex gap-2 md:gap-4 pb-2">
-                                            <div class="w-full">
-                                                <label
-                                                    :for="'name_satuan' + index"
-                                                    class="pb-2"
-                                                    >Satuan:</label
-                                                >
-                                                <v-select
-                                                    :disabled="
-                                                        !(
+                                    <div class="w-full flex gap-4">
+                                        <div class="w-full pb-2">
+                                            <label
+                                                :for="
+                                                    'name_customer' +
+                                                    customerIndex
+                                                "
+                                                class="pb-2"
+                                                >Nama Customer
+                                                {{ customerIndex + 1 }}:</label
+                                            >
+                                            <!-- :disabled="
+                                                    !(
+                                                        matchingUser &&
+                                                        matchingUser.company.includes(
+                                                            selectedMarker.name_company
+                                                        )
+                                                    )
+                                                " -->
+                                            <v-select
+                                                v-if="
+                                                    customerOptions.length > 0
+                                                "
+                                                disabled
+                                                :id="
+                                                    'name_customer' +
+                                                    customerIndex
+                                                "
+                                                :options="customerOptions"
+                                                v-model="customer.name_customer"
+                                                class="w-full"
+                                            />
+
+                                            <p
+                                                v-if="!customer.name_customer"
+                                                class="text-red-500"
+                                            >
+                                                Customer tidak boleh kosong
+                                            </p>
+                                        </div>
+                                        <div class="flex pt-2 gap-2">
+                                            <button
+                                                v-if="
+                                                    matchingUser &&
+                                                    matchingUser.company.includes(
+                                                        selectedMarker.name_company
+                                                    )
+                                                "
+                                                type="button"
+                                                class="btn bg-green-500 text-white hover:bg-green-700"
+                                                @click="tambahItemCustomer"
+                                            >
+                                                +
+                                            </button>
+                                            <button
+                                                v-if="
+                                                    matchingUser &&
+                                                    matchingUser.company.includes(
+                                                        selectedMarker.name_company
+                                                    )
+                                                "
+                                                type="button"
+                                                class="btn bg-red-500 text-white hover:bg-red-700"
+                                                @click="
+                                                    kurangiItemCustomer(
+                                                        customerIndex
+                                                    )
+                                                "
+                                            >
+                                                -
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div
+                                        class="pb-2"
+                                        v-for="(
+                                            satuanItem, index
+                                        ) in customer.satuan"
+                                        :key="index"
+                                    >
+                                        <div>
+                                            <div
+                                                class="flex gap-2 md:gap-4 pb-2"
+                                            >
+                                                <div class="w-full flex gap-4">
+                                                    <div class="w-full">
+                                                        <label
+                                                            :for="
+                                                                'name_satuan' +
+                                                                satuanItem
+                                                            "
+                                                            class="pb-2"
+                                                            >Satuan
+                                                            {{
+                                                                index + 1
+                                                            }}:</label
+                                                        >
+                                                        <v-select
+                                                            :disabled="
+                                                                satuanItem.isSaved ||
+                                                                !(
+                                                                    matchingUser &&
+                                                                    matchingUser.company.includes(
+                                                                        selectedMarker.name_company
+                                                                    )
+                                                                )
+                                                            "
+                                                            :id="
+                                                                'name_satuan' +
+                                                                index
+                                                            "
+                                                            :options="satuan"
+                                                            v-model="
+                                                                satuanItem.name_satuan
+                                                            "
+                                                            class="w-full"
+                                                        />
+                                                        <p
+                                                            v-if="
+                                                                !satuanItem.name_satuan
+                                                            "
+                                                            class="text-red-500"
+                                                        >
+                                                            Satuan tidak boleh
+                                                            kosong
+                                                        </p>
+                                                    </div>
+                                                    <div class="w-full">
+                                                        <label
+                                                            :for="
+                                                                'jenis_barang_name' +
+                                                                index
+                                                            "
+                                                            class="pb-2"
+                                                            >Jenis Barang
+                                                            {{
+                                                                index + 1
+                                                            }}:</label
+                                                        >
+                                                        <!-- :disabled="
+                                                                !(
+                                                                    matchingUser &&
+                                                                    matchingUser.company.includes(
+                                                                        selectedMarker.name_company
+                                                                    )
+                                                                )
+                                                            " -->
+                                                        <v-select
+                                                            disabled
+                                                            :id="
+                                                                'jenis_barang_name' +
+                                                                index
+                                                            "
+                                                            :options="
+                                                                jenis_barang
+                                                            "
+                                                            v-model="
+                                                                satuanItem.jenis_barang_name
+                                                            "
+                                                            class="w-full"
+                                                        />
+                                                        <p
+                                                            v-if="
+                                                                !satuanItem.jenis_barang_name
+                                                            "
+                                                            class="text-red-500"
+                                                        >
+                                                            Jenis Barang tidak
+                                                            boleh kosong
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div class="flex pt-2 gap-2">
+                                                    <button
+                                                        v-if="
                                                             matchingUser &&
                                                             matchingUser.company.includes(
                                                                 selectedMarker.name_company
                                                             )
-                                                        )
-                                                    "
-                                                    :id="'name_satuan' + index"
-                                                    :options="satuan"
-                                                    v-model="
-                                                        satuanItem.name_satuan
-                                                    "
-                                                    class="w-full"
-                                                />
-                                                <p
-                                                    v-if="
-                                                        !satuanItem.name_satuan
-                                                    "
-                                                    class="text-red-500"
-                                                >
-                                                    Satuan tidak boleh kosong
-                                                </p>
-                                            </div>
-                                            <div class="flex pt-2 gap-2">
-                                                <button
-                                                    v-if="
-                                                        matchingUser &&
-                                                        matchingUser.company.includes(
-                                                            selectedMarker.name_company
-                                                        )
-                                                    "
-                                                    type="button"
-                                                    class="btn bg-green-500 text-white hover:bg-green-700"
-                                                    @click="tambahItemBiaya"
-                                                >
-                                                    +
-                                                </button>
-                                                <button
-                                                    v-if="
-                                                        matchingUser &&
-                                                        matchingUser.company.includes(
-                                                            selectedMarker.name_company
-                                                        )
-                                                    "
-                                                    type="button"
-                                                    class="btn bg-red-500 text-white hover:bg-red-700"
-                                                    @click="kurangiItemBiaya"
-                                                >
-                                                    -
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        <div class="flex gap-4">
-                                            <div class="flex flex-col w-full">
-                                                <div
-                                                    v-for="(
-                                                        biayaItem, biayaIndex
-                                                    ) in satuanItem.biaya"
-                                                    :key="biayaIndex"
-                                                    class="w-full flex gap-2"
-                                                >
-                                                    <div
-                                                        :class="[
-                                                            'w-full lg:grid gap-4',
-                                                            {
-                                                                'grid-cols-2':
-                                                                    !matchingUser.company.includes(
-                                                                        selectedMarker.name_company
-                                                                    ),
-                                                                'xl:grid-cols-3':
-                                                                    matchingUser.company.includes(
-                                                                        selectedMarker.name_company
-                                                                    ) &&
-                                                                    biayaItem.harga_modal,
-                                                            },
-                                                        ]"
+                                                        "
+                                                        type="button"
+                                                        class="btn bg-green-500 text-white hover:bg-green-700"
+                                                        @click="tambahItemBiaya"
                                                     >
-                                                        <div class="pb-2">
-                                                            <label
-                                                                :for="
-                                                                    'biaya' +
-                                                                    index +
-                                                                    '-' +
-                                                                    biayaIndex
-                                                                "
-                                                                class=""
-                                                                >Nama Biaya
-                                                                {{
-                                                                    biayaIndex +
-                                                                    1
-                                                                }}:</label
-                                                            >
-                                                            <v-select
-                                                                :disabled="
-                                                                    !(
-                                                                        matchingUser &&
-                                                                        matchingUser.company.includes(
-                                                                            selectedMarker.name_company
-                                                                        )
-                                                                    )
-                                                                "
-                                                                :id="
-                                                                    'biaya' +
-                                                                    index +
-                                                                    '-' +
-                                                                    biayaIndex
-                                                                "
-                                                                v-model="
-                                                                    biayaItem.name_biaya
-                                                                "
-                                                                :options="
-                                                                    apiData.biaya
-                                                                "
-                                                                class="w-full rounded-lg text-xs"
-                                                            />
-                                                            <p
-                                                                v-if="
-                                                                    !biayaItem.name_biaya
-                                                                "
-                                                                class="text-red-500"
-                                                            >
-                                                                Nama Biaya tidak
-                                                                boleh kosong
-                                                            </p>
-                                                        </div>
-                                                        <div class="pb-2">
-                                                            <label
-                                                                :for="
-                                                                    'biaya' +
-                                                                    index +
-                                                                    '-' +
-                                                                    biayaIndex
-                                                                "
-                                                                >Harga Jual
-                                                                {{
-                                                                    biayaIndex +
-                                                                    1
-                                                                }}:</label
-                                                            >
-                                                            <input
-                                                                :disabled="
-                                                                    !(
-                                                                        matchingUser &&
-                                                                        matchingUser.company.includes(
-                                                                            selectedMarker.name_company
-                                                                        )
-                                                                    )
-                                                                "
-                                                                :id="
-                                                                    'biaya' +
-                                                                    index +
-                                                                    '-' +
-                                                                    biayaIndex
-                                                                "
-                                                                v-model="
-                                                                    biayaItem.harga
-                                                                "
-                                                                class="w-full rounded-lg text-xs"
-                                                                placeholder="isi Nama Harga"
-                                                                type="number"
-                                                            />
-                                                            <p
-                                                                v-if="
-                                                                    !biayaItem.harga
-                                                                "
-                                                                class="text-red-500"
-                                                            >
-                                                                Harga Jual tidak
-                                                                boleh kosong
-                                                            </p>
-                                                        </div>
-                                                        <div
-                                                            :class="{
-                                                                hidden: !matchingUser.company.includes(
-                                                                    selectedMarker.name_company
-                                                                ),
-                                                            }"
-                                                            class="pb-2"
-                                                        >
-                                                            <label
-                                                                :for="
-                                                                    'biaya' +
-                                                                    index +
-                                                                    '-' +
-                                                                    biayaIndex
-                                                                "
-                                                                >Harga Modal
-                                                                {{
-                                                                    biayaIndex +
-                                                                    1
-                                                                }}:</label
-                                                            >
-                                                            <input
-                                                                :disabled="
-                                                                    !(
-                                                                        matchingUser &&
-                                                                        matchingUser.company.includes(
-                                                                            selectedMarker.name_company
-                                                                        )
-                                                                    )
-                                                                "
-                                                                :id="
-                                                                    'biaya' +
-                                                                    index +
-                                                                    '-' +
-                                                                    biayaIndex
-                                                                "
-                                                                v-model="
-                                                                    biayaItem.harga_modal
-                                                                "
-                                                                class="w-full rounded-lg text-xs"
-                                                                placeholder="isi Nama Harga"
-                                                                type="number"
-                                                            />
-                                                            <!-- <p
-                                                                v-if="
-                                                                    !biayaItem.harga_modal
-                                                                "
-                                                                class="text-red-500"
-                                                            >
-                                                                Harga Modal
-                                                                tidak boleh
-                                                                kosong
-                                                            </p> -->
-                                                        </div>
-                                                    </div>
-                                                    <div
-                                                        class="flex gap-2 pt-2 lg:hidden"
+                                                        +
+                                                    </button>
+                                                    <button
+                                                        v-if="
+                                                            matchingUser &&
+                                                            matchingUser.company.includes(
+                                                                selectedMarker.name_company
+                                                            )
+                                                        "
+                                                        type="button"
+                                                        class="btn bg-red-500 text-white hover:bg-red-700"
+                                                        @click="
+                                                            kurangiItemBiaya
+                                                        "
                                                     >
-                                                        <button
-                                                            v-if="
-                                                                matchingUser &&
-                                                                matchingUser.company.includes(
-                                                                    selectedMarker.name_company
-                                                                )
-                                                            "
-                                                            type="button"
-                                                            class="btn bg-green-500 text-white hover:bg-green-700"
-                                                            @click="
-                                                                tambahBiayaBiaya(
-                                                                    index
-                                                                )
-                                                            "
-                                                        >
-                                                            +
-                                                        </button>
-                                                        <button
-                                                            v-if="
-                                                                matchingUser &&
-                                                                matchingUser.company.includes(
-                                                                    selectedMarker.name_company
-                                                                )
-                                                            "
-                                                            type="button"
-                                                            class="btn bg-red-500 text-white hover:bg-red-700"
-                                                            @click="
-                                                                kurangiBiayaBiaya(
-                                                                    index
-                                                                )
-                                                            "
-                                                        >
-                                                            -
-                                                        </button>
-                                                    </div>
+                                                        -
+                                                    </button>
                                                 </div>
                                             </div>
-                                            <div
-                                                class="gap-2 pt-2 hidden lg:flex"
-                                            >
-                                                <button
-                                                    v-if="
-                                                        matchingUser &&
-                                                        matchingUser.company.includes(
-                                                            selectedMarker.name_company
-                                                        )
-                                                    "
-                                                    type="button"
-                                                    class="btn bg-green-500 text-white hover:bg-green-700"
-                                                    @click="
-                                                        tambahBiayaBiaya(index)
-                                                    "
+
+                                            <div class="flex gap-4">
+                                                <div
+                                                    class="flex flex-col w-full"
                                                 >
-                                                    +
-                                                </button>
-                                                <button
-                                                    v-if="
-                                                        matchingUser &&
-                                                        matchingUser.company.includes(
-                                                            selectedMarker.name_company
-                                                        )
-                                                    "
-                                                    type="button"
-                                                    class="btn bg-red-500 text-white hover:bg-red-700"
-                                                    @click="
-                                                        kurangiBiayaBiaya(index)
-                                                    "
+                                                    <div
+                                                        v-for="(
+                                                            biayaItem,
+                                                            biayaIndex
+                                                        ) in satuanItem.biaya"
+                                                        :key="biayaIndex"
+                                                        class="w-full flex gap-2"
+                                                    >
+                                                        <div
+                                                            :class="[
+                                                                'w-full lg:grid gap-4 grid-cols-3',
+                                                                {
+                                                                    'lg:grid-cols-2':
+                                                                        !matchingUser.company.includes(
+                                                                            selectedMarker.name_company
+                                                                        ) ||
+                                                                        (matchingUser.view_company.includes(
+                                                                            selectedMarker.name_company
+                                                                        ) &&
+                                                                            !biayaItem.harga_modal &&
+                                                                            satuan.isSaved),
+                                                                    'lg:grid-cols-3':
+                                                                        matchingUser.company.includes(
+                                                                            selectedMarker.name_company
+                                                                        ) &&
+                                                                        biayaItem.harga_modal &&
+                                                                        !satuan.isSaved,
+                                                                },
+                                                            ]"
+                                                        >
+                                                            <div class="pb-2">
+                                                                <label
+                                                                    :for="
+                                                                        'biaya' +
+                                                                        index +
+                                                                        '-' +
+                                                                        biayaIndex
+                                                                    "
+                                                                    class=""
+                                                                    >Nama Biaya
+                                                                    {{
+                                                                        biayaIndex +
+                                                                        1
+                                                                    }}:</label
+                                                                >
+                                                                <v-select
+                                                                    :disabled="
+                                                                        !(
+                                                                            matchingUser &&
+                                                                            matchingUser.company.includes(
+                                                                                selectedMarker.name_company
+                                                                            )
+                                                                        )
+                                                                    "
+                                                                    :id="
+                                                                        'biaya' +
+                                                                        index +
+                                                                        '-' +
+                                                                        biayaIndex
+                                                                    "
+                                                                    v-model="
+                                                                        biayaItem.name_biaya
+                                                                    "
+                                                                    :options="
+                                                                        apiData.biaya
+                                                                    "
+                                                                    class="w-full rounded-lg text-xs"
+                                                                />
+                                                                <p
+                                                                    v-if="
+                                                                        !biayaItem.name_biaya
+                                                                    "
+                                                                    class="text-red-500"
+                                                                >
+                                                                    Nama Biaya
+                                                                    tidak boleh
+                                                                    kosong
+                                                                </p>
+                                                            </div>
+                                                            <div class="pb-2">
+                                                                <label
+                                                                    :for="
+                                                                        'biaya' +
+                                                                        index +
+                                                                        '-' +
+                                                                        biayaIndex
+                                                                    "
+                                                                    >Harga Jual
+                                                                    {{
+                                                                        biayaIndex +
+                                                                        1
+                                                                    }}:</label
+                                                                >
+                                                                <input
+                                                                    :disabled="
+                                                                        !(
+                                                                            matchingUser &&
+                                                                            matchingUser.company.includes(
+                                                                                selectedMarker.name_company
+                                                                            )
+                                                                        )
+                                                                    "
+                                                                    :id="
+                                                                        'biaya' +
+                                                                        index +
+                                                                        '-' +
+                                                                        biayaIndex
+                                                                    "
+                                                                    v-model="
+                                                                        biayaItem.harga
+                                                                    "
+                                                                    class="w-full border-gray-950 border-opacity-25 focus:outline-none focus:ring focus:border-blue-300 rounded text-xs"
+                                                                    placeholder="isi Total Harga"
+                                                                    type="number"
+                                                                />
+                                                                <p
+                                                                    v-if="
+                                                                        !biayaItem.harga
+                                                                    "
+                                                                    class="text-red-500"
+                                                                >
+                                                                    Harga Jual
+                                                                    tidak boleh
+                                                                    kosong
+                                                                </p>
+                                                            </div>
+                                                            <div
+                                                                :class="{
+                                                                    hidden: !matchingUser.company.includes(
+                                                                        selectedMarker.name_company
+                                                                    ),
+                                                                }"
+                                                                class="pb-2"
+                                                            >
+                                                                <!-- <div
+                                                                :class="{
+                                                                    hidden:
+                                                                        !matchingUser.company.includes(
+                                                                            selectedMarker.name_company
+                                                                        ) ||
+                                                                        !biayaItem.harga_modal,
+                                                                }"
+                                                                class="pb-2"
+                                                            > -->
+                                                                <label
+                                                                    :for="
+                                                                        'biaya' +
+                                                                        index +
+                                                                        '-' +
+                                                                        biayaIndex
+                                                                    "
+                                                                >
+                                                                    Harga Modal
+                                                                    {{
+                                                                        biayaIndex +
+                                                                        1
+                                                                    }}:
+                                                                </label>
+                                                                <input
+                                                                    :disabled="
+                                                                        !(
+                                                                            matchingUser &&
+                                                                            matchingUser.company.includes(
+                                                                                selectedMarker.name_company
+                                                                            )
+                                                                        )
+                                                                    "
+                                                                    :id="
+                                                                        'biaya' +
+                                                                        index +
+                                                                        '-' +
+                                                                        biayaIndex
+                                                                    "
+                                                                    v-model="
+                                                                        biayaItem.harga_modal
+                                                                    "
+                                                                    class="w-full border-gray-950 border-opacity-25 focus:outline-none focus:ring focus:border-blue-300 rounded text-xs"
+                                                                    placeholder="isi Nama Harga"
+                                                                    type="number"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <div
+                                                            class="flex gap-2 pt-2 lg:hidden"
+                                                        >
+                                                            <button
+                                                                v-if="
+                                                                    matchingUser &&
+                                                                    matchingUser.company.includes(
+                                                                        selectedMarker.name_company
+                                                                    )
+                                                                "
+                                                                type="button"
+                                                                class="btn bg-green-500 text-white hover:bg-green-700"
+                                                                @click="
+                                                                    tambahBiayaBiaya(
+                                                                        index
+                                                                    )
+                                                                "
+                                                            >
+                                                                +
+                                                            </button>
+                                                            <button
+                                                                v-if="
+                                                                    matchingUser &&
+                                                                    matchingUser.company.includes(
+                                                                        selectedMarker.name_company
+                                                                    )
+                                                                "
+                                                                type="button"
+                                                                class="btn bg-red-500 text-white hover:bg-red-700"
+                                                                @click="
+                                                                    kurangiBiayaBiaya(
+                                                                        index
+                                                                    )
+                                                                "
+                                                            >
+                                                                -
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div
+                                                    class="gap-2 pt-2 hidden lg:flex"
                                                 >
-                                                    -
-                                                </button>
+                                                    <button
+                                                        v-if="
+                                                            matchingUser &&
+                                                            matchingUser.company.includes(
+                                                                selectedMarker.name_company
+                                                            )
+                                                        "
+                                                        type="button"
+                                                        class="btn bg-green-500 text-white hover:bg-green-700"
+                                                        @click="
+                                                            tambahBiayaBiaya(
+                                                                index
+                                                            )
+                                                        "
+                                                    >
+                                                        +
+                                                    </button>
+                                                    <button
+                                                        v-if="
+                                                            matchingUser &&
+                                                            matchingUser.company.includes(
+                                                                selectedMarker.name_company
+                                                            )
+                                                        "
+                                                        type="button"
+                                                        class="btn bg-red-500 text-white hover:bg-red-700"
+                                                        @click="
+                                                            kurangiBiayaBiaya(
+                                                                index
+                                                            )
+                                                        "
+                                                    >
+                                                        -
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                                <div class="">
+                                    <label for="notes">Catatan:</label>
+                                    <textarea
+                                        id="notes"
+                                        class="w-full mb-2 p-2 border h-32 md:h-20 focus:outline-none focus:ring focus:border-blue-300 rounded-lg text-sm border-gray-950 border-opacity-25"
+                                        :disabled="
+                                            !(
+                                                matchingUser &&
+                                                matchingUser.company.includes(
+                                                    selectedMarker.name_company
+                                                )
+                                            )
+                                        "
+                                        >{{
+                                            selectedMarker
+                                                ? selectedMarker.notes
+                                                : ""
+                                        }}</textarea
+                                    >
+                                </div>
 
-                            <label for="notes">Catatan:</label>
-                            <textarea
-                                id="notes"
-                                class="w-full mb-2 p-2 border h-32 md:h-16"
-                                :disabled="
-                                    !(
-                                        matchingUser &&
-                                        matchingUser.company.includes(
-                                            selectedMarker.name_company
-                                        )
-                                    )
-                                "
-                                >{{
-                                    selectedMarker ? selectedMarker.notes : ""
-                                }}</textarea
-                            >
-
-                            <div class="flex lg:flex-row gap-2 justify-center">
-                                <button
-                                    v-if="
-                                        matchingUser &&
-                                        matchingUser.company.includes(
-                                            selectedMarker.name_company
-                                        )
-                                    "
-                                    type="submit"
-                                    class="bg-blue-500 text-white py-3 px-4 rounded-md w-full"
+                                <div
+                                    class="flex lg:flex-row gap-2 justify-center"
                                 >
-                                    Save
-                                </button>
-                                <button
-                                    v-if="
-                                        matchingUser &&
-                                        matchingUser.company.includes(
-                                            selectedMarker.name_company
-                                        )
-                                    "
-                                    @click="deleteSaveFormData"
-                                    type="button"
-                                    class="bg-red-500 text-white py-3 px-4 rounded-md w-full"
-                                >
-                                    Delete
-                                </button>
-                            </div>
-                            <div class="mt-8">
-                                <h1>
-                                    Dibuat oleh :
-                                    {{ selectedMarker.name }}
-                                </h1>
-                                <h1>
-                                    Perusahaan :
-                                    {{ selectedMarker.name_company }}
-                                </h1>
-                                <span
-                                    >Dibuat pada :
-                                    {{ selectedMarker.date }}</span
-                                >
+                                    <button
+                                        v-if="
+                                            matchingUser &&
+                                            matchingUser.company.includes(
+                                                selectedMarker.name_company
+                                            )
+                                        "
+                                        type="submit"
+                                        class="bg-blue-500 text-white py-3 px-4 rounded-md w-full"
+                                    >
+                                        Save
+                                    </button>
+                                    <button
+                                        v-if="
+                                            matchingUser &&
+                                            matchingUser.company.includes(
+                                                selectedMarker.name_company
+                                            )
+                                        "
+                                        @click="deleteSaveFormData"
+                                        type="button"
+                                        class="bg-red-500 text-white py-3 px-4 rounded-md w-full"
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
+                                <div class="mt-8">
+                                    <h1>
+                                        Dibuat oleh :
+                                        {{ selectedMarker.name }}
+                                    </h1>
+                                    <h1>
+                                        Perusahaan :
+                                        {{ selectedMarker.name_company }}
+                                    </h1>
+                                    <span
+                                        >Dibuat pada :
+                                        {{ selectedMarker.date }}</span
+                                    >
+                                </div>
                             </div>
                         </div>
                     </form>
