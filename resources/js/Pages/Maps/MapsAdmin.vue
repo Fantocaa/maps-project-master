@@ -238,9 +238,11 @@ export default defineComponent({
                                 name_biaya: biaya.name_biaya,
                                 harga: biaya.harga,
                                 harga_modal: biaya.harga_modal,
+                                isSaved: true, // Menandakan bahwa data ini sudah disimpan di database
                             })),
                             isSaved: true, // Menandakan bahwa data ini sudah disimpan di database
                         })),
+                        isSaved: true, // Menandakan bahwa data ini sudah disimpan di database
                     })),
                     showForm: true,
                 };
@@ -546,11 +548,11 @@ export default defineComponent({
             }
         };
 
-        const tambahItemBiaya = () => {
+        const tambahItemBiaya = (customerIndex) => {
             // Pastikan ada setidaknya satu customer
             if (selectedMarker.value.customers.length > 0) {
                 // Tambahkan satuan baru ke customer pertama (index 0)
-                selectedMarker.value.customers[0].satuan.push({
+                selectedMarker.value.customers[customerIndex].satuan.push({
                     name_satuan: null,
                     jenis_barang_name: "",
                     biaya: [{ name_biaya: "", harga: "", harga_modal: "" }],
@@ -559,29 +561,40 @@ export default defineComponent({
             }
         };
 
-        const kurangiItemBiaya = (index) => {
+        const kurangiItemBiaya = (customerIndex, index) => {
             if (
-                selectedMarker.value &&
-                selectedMarker.value.customers &&
-                selectedMarker.value.customers.length > 0 &&
-                selectedMarker.value.customers[0].satuan &&
-                selectedMarker.value.customers[0].satuan.length > 1
+                selectedMarker.value.customers[customerIndex].satuan.length > 1
             ) {
-                selectedMarker.value.customers[0].satuan.splice(index, 1);
+                selectedMarker.value.customers[customerIndex].satuan.splice(
+                    index,
+                    1
+                );
             }
         };
 
-        const tambahBiayaBiaya = (index) => {
-            selectedMarker.value.satuan[index].biaya.push({
-                name_biaya: "",
-                harga: "",
-                harga_modal: "",
-            });
+        const tambahBiayaBiaya = (customerIndex, index) => {
+            const customer = selectedMarker.value.customers?.[customerIndex];
+            if (customer) {
+                if (customer.satuan?.[index]) {
+                    customer.satuan[index].biaya.push({
+                        name_biaya: "",
+                        harga: "",
+                        harga_modal: "",
+                    });
+                }
+            }
         };
 
-        const kurangiBiayaBiaya = (index, biayaIndex) => {
-            if (selectedMarker.value.satuan[index].biaya.length > 1) {
-                selectedMarker.value.satuan[index].biaya.splice(biayaIndex, 1);
+        const kurangiBiayaBiaya = (customerIndex, index, biayaIndex) => {
+            const satuan =
+                selectedMarker.value.customers?.[customerIndex]?.satuan?.[
+                    index
+                ];
+
+            // Pastikan 'satuan' ada dan memiliki properti 'biaya'
+            if (satuan && satuan.biaya?.length > 1) {
+                // Hapus item biaya berdasarkan indeks
+                satuan.biaya.splice(biayaIndex, 1);
             }
         };
 
@@ -1188,7 +1201,11 @@ export default defineComponent({
                                             <button
                                                 type="button"
                                                 class="btn bg-green-500 text-white hover:bg-green-700"
-                                                @click="tambahCustomer"
+                                                @click="
+                                                    tambahCustomer(
+                                                        customerIndex
+                                                    )
+                                                "
                                             >
                                                 +
                                             </button>
@@ -1379,6 +1396,7 @@ export default defineComponent({
                                                         v-model="biaya.harga"
                                                         class="w-full border-gray-950 border-opacity-25 focus:outline-none focus:ring focus:border-blue-300 rounded text-xs"
                                                         placeholder="isi Total Harga"
+                                                        type="number"
                                                     />
                                                     <p
                                                         v-if="!biaya.harga"
@@ -1417,6 +1435,7 @@ export default defineComponent({
                                                         "
                                                         class="w-full border-gray-950 border-opacity-25 focus:outline-none focus:ring focus:border-blue-300 rounded text-xs"
                                                         placeholder="isi Nama Harga"
+                                                        type="number"
                                                     />
                                                 </div>
                                             </div>
@@ -1550,19 +1569,19 @@ export default defineComponent({
                                                 >Nama Customer
                                                 {{ customerIndex + 1 }}:</label
                                             >
-                                            <!-- :disabled="
+                                            <v-select
+                                                v-if="
+                                                    customerOptions.length > 0
+                                                "
+                                                :disabled="
+                                                    customer.isSaved ||
                                                     !(
                                                         matchingUser &&
                                                         matchingUser.company.includes(
                                                             selectedMarker.name_company
                                                         )
                                                     )
-                                                " -->
-                                            <v-select
-                                                v-if="
-                                                    customerOptions.length > 0
                                                 "
-                                                disabled
                                                 :id="
                                                     'name_customer' +
                                                     customerIndex
@@ -1589,7 +1608,11 @@ export default defineComponent({
                                                 "
                                                 type="button"
                                                 class="btn bg-green-500 text-white hover:bg-green-700"
-                                                @click="tambahItemCustomer"
+                                                @click="
+                                                    tambahItemCustomer(
+                                                        customerIndex
+                                                    )
+                                                "
                                             >
                                                 +
                                             </button>
@@ -1614,9 +1637,7 @@ export default defineComponent({
                                     </div>
                                     <div
                                         class="pb-2"
-                                        v-for="(
-                                            satuanItem, index
-                                        ) in customer.satuan"
+                                        v-for="(item, index) in customer.satuan"
                                         :key="index"
                                     >
                                         <div>
@@ -1628,7 +1649,7 @@ export default defineComponent({
                                                         <label
                                                             :for="
                                                                 'name_satuan' +
-                                                                satuanItem
+                                                                customerIndex
                                                             "
                                                             class="pb-2"
                                                             >Satuan
@@ -1638,7 +1659,7 @@ export default defineComponent({
                                                         >
                                                         <v-select
                                                             :disabled="
-                                                                satuanItem.isSaved ||
+                                                                item.isSaved ||
                                                                 !(
                                                                     matchingUser &&
                                                                     matchingUser.company.includes(
@@ -1648,17 +1669,19 @@ export default defineComponent({
                                                             "
                                                             :id="
                                                                 'name_satuan' +
+                                                                customerIndex +
+                                                                '-' +
                                                                 index
                                                             "
                                                             :options="satuan"
                                                             v-model="
-                                                                satuanItem.name_satuan
+                                                                item.name_satuan
                                                             "
                                                             class="w-full"
                                                         />
                                                         <p
                                                             v-if="
-                                                                !satuanItem.name_satuan
+                                                                !item.name_satuan
                                                             "
                                                             class="text-red-500"
                                                         >
@@ -1670,6 +1693,8 @@ export default defineComponent({
                                                         <label
                                                             :for="
                                                                 'jenis_barang_name' +
+                                                                customerIndex +
+                                                                '-' +
                                                                 index
                                                             "
                                                             class="pb-2"
@@ -1678,31 +1703,33 @@ export default defineComponent({
                                                                 index + 1
                                                             }}:</label
                                                         >
-                                                        <!-- :disabled="
+                                                        <v-select
+                                                            :disabled="
+                                                                item.isSaved ||
                                                                 !(
                                                                     matchingUser &&
                                                                     matchingUser.company.includes(
                                                                         selectedMarker.name_company
                                                                     )
                                                                 )
-                                                            " -->
-                                                        <v-select
-                                                            disabled
+                                                            "
                                                             :id="
                                                                 'jenis_barang_name' +
+                                                                customerIndex +
+                                                                '-' +
                                                                 index
                                                             "
                                                             :options="
                                                                 jenis_barang
                                                             "
                                                             v-model="
-                                                                satuanItem.jenis_barang_name
+                                                                item.jenis_barang_name
                                                             "
                                                             class="w-full"
                                                         />
                                                         <p
                                                             v-if="
-                                                                !satuanItem.jenis_barang_name
+                                                                !item.jenis_barang_name
                                                             "
                                                             class="text-red-500"
                                                         >
@@ -1721,7 +1748,11 @@ export default defineComponent({
                                                         "
                                                         type="button"
                                                         class="btn bg-green-500 text-white hover:bg-green-700"
-                                                        @click="tambahItemBiaya"
+                                                        @click="
+                                                            tambahItemBiaya(
+                                                                customerIndex
+                                                            )
+                                                        "
                                                     >
                                                         +
                                                     </button>
@@ -1735,7 +1766,10 @@ export default defineComponent({
                                                         type="button"
                                                         class="btn bg-red-500 text-white hover:bg-red-700"
                                                         @click="
-                                                            kurangiItemBiaya
+                                                            kurangiItemBiaya(
+                                                                customerIndex,
+                                                                index
+                                                            )
                                                         "
                                                     >
                                                         -
@@ -1749,9 +1783,8 @@ export default defineComponent({
                                                 >
                                                     <div
                                                         v-for="(
-                                                            biayaItem,
-                                                            biayaIndex
-                                                        ) in satuanItem.biaya"
+                                                            biaya, biayaIndex
+                                                        ) in item.biaya"
                                                         :key="biayaIndex"
                                                         class="w-full flex gap-2"
                                                     >
@@ -1766,13 +1799,13 @@ export default defineComponent({
                                                                         (matchingUser.view_company.includes(
                                                                             selectedMarker.name_company
                                                                         ) &&
-                                                                            !biayaItem.harga_modal &&
+                                                                            !biaya.harga_modal &&
                                                                             satuan.isSaved),
                                                                     'lg:grid-cols-3':
                                                                         matchingUser.company.includes(
                                                                             selectedMarker.name_company
                                                                         ) &&
-                                                                        biayaItem.harga_modal &&
+                                                                        biaya.harga_modal &&
                                                                         !satuan.isSaved,
                                                                 },
                                                             ]"
@@ -1783,9 +1816,10 @@ export default defineComponent({
                                                                         'biaya' +
                                                                         index +
                                                                         '-' +
-                                                                        biayaIndex
+                                                                        biayaIndex +
+                                                                        '-' +
+                                                                        customerIndex
                                                                     "
-                                                                    class=""
                                                                     >Nama Biaya
                                                                     {{
                                                                         biayaIndex +
@@ -1794,6 +1828,7 @@ export default defineComponent({
                                                                 >
                                                                 <v-select
                                                                     :disabled="
+                                                                        biaya.isSaved ||
                                                                         !(
                                                                             matchingUser &&
                                                                             matchingUser.company.includes(
@@ -1803,12 +1838,14 @@ export default defineComponent({
                                                                     "
                                                                     :id="
                                                                         'biaya' +
+                                                                        customerIndex +
+                                                                        '-' +
                                                                         index +
                                                                         '-' +
                                                                         biayaIndex
                                                                     "
                                                                     v-model="
-                                                                        biayaItem.name_biaya
+                                                                        biaya.name_biaya
                                                                     "
                                                                     :options="
                                                                         apiData.biaya
@@ -1817,7 +1854,7 @@ export default defineComponent({
                                                                 />
                                                                 <p
                                                                     v-if="
-                                                                        !biayaItem.name_biaya
+                                                                        !biaya.name_biaya
                                                                     "
                                                                     class="text-red-500"
                                                                 >
@@ -1829,7 +1866,9 @@ export default defineComponent({
                                                             <div class="pb-2">
                                                                 <label
                                                                     :for="
-                                                                        'biaya' +
+                                                                        'harga' +
+                                                                        customerIndex +
+                                                                        '-' +
                                                                         index +
                                                                         '-' +
                                                                         biayaIndex
@@ -1850,13 +1889,15 @@ export default defineComponent({
                                                                         )
                                                                     "
                                                                     :id="
-                                                                        'biaya' +
+                                                                        'harga' +
+                                                                        customerIndex +
+                                                                        '-' +
                                                                         index +
                                                                         '-' +
                                                                         biayaIndex
                                                                     "
                                                                     v-model="
-                                                                        biayaItem.harga
+                                                                        biaya.harga
                                                                     "
                                                                     class="w-full border-gray-950 border-opacity-25 focus:outline-none focus:ring focus:border-blue-300 rounded text-xs"
                                                                     placeholder="isi Total Harga"
@@ -1864,7 +1905,7 @@ export default defineComponent({
                                                                 />
                                                                 <p
                                                                     v-if="
-                                                                        !biayaItem.harga
+                                                                        !biaya.harga
                                                                     "
                                                                     class="text-red-500"
                                                                 >
@@ -1887,13 +1928,15 @@ export default defineComponent({
                                                                         !matchingUser.company.includes(
                                                                             selectedMarker.name_company
                                                                         ) ||
-                                                                        !biayaItem.harga_modal,
+                                                                        !biaya.harga_modal,
                                                                 }"
                                                                 class="pb-2"
                                                             > -->
                                                                 <label
                                                                     :for="
-                                                                        'biaya' +
+                                                                        'harga_modal' +
+                                                                        customerIndex +
+                                                                        '-' +
                                                                         index +
                                                                         '-' +
                                                                         biayaIndex
@@ -1915,13 +1958,15 @@ export default defineComponent({
                                                                         )
                                                                     "
                                                                     :id="
-                                                                        'biaya' +
+                                                                        'harga_modal' +
+                                                                        customerIndex +
+                                                                        '-' +
                                                                         index +
                                                                         '-' +
                                                                         biayaIndex
                                                                     "
                                                                     v-model="
-                                                                        biayaItem.harga_modal
+                                                                        biaya.harga_modal
                                                                     "
                                                                     class="w-full border-gray-950 border-opacity-25 focus:outline-none focus:ring focus:border-blue-300 rounded text-xs"
                                                                     placeholder="isi Nama Harga"
@@ -1943,6 +1988,7 @@ export default defineComponent({
                                                                 class="btn bg-green-500 text-white hover:bg-green-700"
                                                                 @click="
                                                                     tambahBiayaBiaya(
+                                                                        customerIndex,
                                                                         index
                                                                     )
                                                                 "
@@ -1960,7 +2006,51 @@ export default defineComponent({
                                                                 class="btn bg-red-500 text-white hover:bg-red-700"
                                                                 @click="
                                                                     kurangiBiayaBiaya(
+                                                                        customerIndex,
+                                                                        index,
+                                                                        biayaIndex
+                                                                    )
+                                                                "
+                                                            >
+                                                                -
+                                                            </button>
+                                                        </div>
+                                                        <div
+                                                            class="gap-2 pt-2 hidden lg:flex"
+                                                        >
+                                                            <button
+                                                                v-if="
+                                                                    matchingUser &&
+                                                                    matchingUser.company.includes(
+                                                                        selectedMarker.name_company
+                                                                    )
+                                                                "
+                                                                type="button"
+                                                                class="btn bg-green-500 text-white hover:bg-green-700"
+                                                                @click="
+                                                                    tambahBiayaBiaya(
+                                                                        customerIndex,
                                                                         index
+                                                                    )
+                                                                "
+                                                            >
+                                                                +
+                                                            </button>
+
+                                                            <button
+                                                                v-if="
+                                                                    matchingUser &&
+                                                                    matchingUser.company.includes(
+                                                                        selectedMarker.name_company
+                                                                    )
+                                                                "
+                                                                type="button"
+                                                                class="btn bg-red-500 text-white hover:bg-red-700"
+                                                                @click="
+                                                                    kurangiBiayaBiaya(
+                                                                        customerIndex,
+                                                                        index,
+                                                                        biayaIndex
                                                                     )
                                                                 "
                                                             >
@@ -1968,44 +2058,6 @@ export default defineComponent({
                                                             </button>
                                                         </div>
                                                     </div>
-                                                </div>
-                                                <div
-                                                    class="gap-2 pt-2 hidden lg:flex"
-                                                >
-                                                    <button
-                                                        v-if="
-                                                            matchingUser &&
-                                                            matchingUser.company.includes(
-                                                                selectedMarker.name_company
-                                                            )
-                                                        "
-                                                        type="button"
-                                                        class="btn bg-green-500 text-white hover:bg-green-700"
-                                                        @click="
-                                                            tambahBiayaBiaya(
-                                                                index
-                                                            )
-                                                        "
-                                                    >
-                                                        +
-                                                    </button>
-                                                    <button
-                                                        v-if="
-                                                            matchingUser &&
-                                                            matchingUser.company.includes(
-                                                                selectedMarker.name_company
-                                                            )
-                                                        "
-                                                        type="button"
-                                                        class="btn bg-red-500 text-white hover:bg-red-700"
-                                                        @click="
-                                                            kurangiBiayaBiaya(
-                                                                index
-                                                            )
-                                                        "
-                                                    >
-                                                        -
-                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
