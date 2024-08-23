@@ -115,6 +115,12 @@ export default defineComponent({
             },
         ]);
 
+        const validationErrors = ref({
+            name_agent: "",
+            name_penerima: "",
+            items: [],
+        });
+
         const resetForm = (index) => {
             // Reset data formulir untuk marker tertentu
             if (index >= 0 && index < formInput.value.length) {
@@ -350,15 +356,13 @@ export default defineComponent({
                     (map) =>
                         matchingUser.value.view_company.includes(
                             map.name_company
+                        ) ||
+                        matchingUser.value.company.includes(map.name_company) ||
+                        matchingUser.value.company.some((company) =>
+                            map.customers.some(
+                                (customer) => customer.name_customer === company
+                            )
                         )
-
-                    // ||
-                    // matchingUser.value.company.includes(map.name_company) ||
-                    // matchingUser.value.company.some((company) =>
-                    //     map.customers.some(
-                    //         (customer) => customer.name_customer === company
-                    //     )
-                    // )
                 );
 
                 // console.log(data);
@@ -598,8 +602,99 @@ export default defineComponent({
             }
         };
 
-        const saveFormData = () => {
+        const saveFormData = async () => {
             if (markers.value.length > 0) {
+                validationErrors.value = []; // Reset errors
+
+                let isValid = true;
+
+                // Validasi input utama
+                if (!formInput.value.name_agent) {
+                    validationErrors.value.name_agent =
+                        "Nama Agent tidak boleh kosong";
+                    isValid = false;
+                }
+
+                if (!formInput.value.name_penerima) {
+                    validationErrors.value.name_penerima =
+                        "Nama Penerima tidak boleh kosong";
+                    isValid = false;
+                }
+
+                // Validasi input utama untuk setiap customer
+                formInput.value.forEach((customer, customerIndex) => {
+                    const customerErrors = {
+                        name_customer: "",
+                        items: [],
+                    };
+
+                    // Validasi name_customer
+                    if (!customer.name_customer) {
+                        customerErrors.name_customer =
+                            "Customer tidak boleh kosong";
+                        isValid = false;
+                    }
+
+                    // Validasi item dalam array
+                    if (Array.isArray(customer.items)) {
+                        customer.items.forEach((item, itemIndex) => {
+                            const itemErrors = {
+                                name_satuan: "",
+                                jenis_barang_name: "",
+                                biaya: [],
+                            };
+
+                            if (!item.name_satuan) {
+                                itemErrors.name_satuan =
+                                    "Satuan tidak boleh kosong";
+                                isValid = false;
+                            }
+
+                            if (!item.jenis_barang_name) {
+                                itemErrors.jenis_barang_name =
+                                    "Jenis Barang tidak boleh kosong";
+                                isValid = false;
+                            }
+
+                            // Validasi biaya dalam array
+                            if (Array.isArray(item.biaya)) {
+                                item.biaya.forEach((biaya, biayaIndex) => {
+                                    const biayaErrors = { nama: "", harga: "" };
+
+                                    if (!biaya.nama) {
+                                        biayaErrors.nama =
+                                            "Nama Biaya tidak boleh kosong";
+                                        isValid = false;
+                                    }
+
+                                    if (!biaya.harga) {
+                                        biayaErrors.harga =
+                                            "Harga Jual tidak boleh kosong";
+                                        isValid = false;
+                                    }
+
+                                    itemErrors.biaya.push(biayaErrors);
+                                });
+                            } else {
+                                itemErrors.biaya = [];
+                            }
+
+                            customerErrors.items.push(itemErrors);
+                        });
+                    } else {
+                        customer.items = [];
+                    }
+
+                    validationErrors.value.push(customerErrors);
+                });
+
+                if (!isValid) {
+                    alert(
+                        "Ada kesalahan dalam input form. Silakan periksa dan coba lagi."
+                    );
+                    return; // Hentikan eksekusi fungsi jika ada error
+                }
+
                 const lastMarker = markers.value[markers.value.length - 1];
 
                 if (
@@ -619,17 +714,16 @@ export default defineComponent({
                             : "Loading...",
                         name_agent: formInput.value.name_agent,
                     };
+
                     // Format formData
                     const formattedData = formInput.value.reduce(
                         (acc, entry) => {
-                            // Cari index customer yang sudah ada
                             let customerIndex = acc.findIndex(
                                 (item) =>
                                     item.name_customer === entry.name_customer
                             );
 
                             if (customerIndex === -1) {
-                                // Jika customer belum ada, tambahkan sebagai item baru
                                 acc.push({
                                     name_customer: entry.name_customer || null,
                                     satuan: (entry.items || []).map((item) => ({
@@ -647,7 +741,6 @@ export default defineComponent({
                                     })),
                                 });
                             } else {
-                                // Jika customer sudah ada, tambahkan satuan ke customer yang sudah ada
                                 acc[customerIndex].satuan.push(
                                     ...(entry.items || []).map((item) => ({
                                         name_satuan: item.name_satuan || null,
@@ -674,18 +767,23 @@ export default defineComponent({
                         markerData: formattedData,
                     };
 
-                    // Menggunakan Ajax jQuery untuk mengirim data
-                    $.ajax({
-                        type: "POST",
-                        contentType: "application/json",
-                        headers: {
-                            "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr(
-                                "content"
-                            ),
-                        },
-                        url: "/maps/store",
-                        data: JSON.stringify(dataToSend),
-                        success: function (data) {
+                    try {
+                        const response = await fetch("/maps/store", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                // "X-CSRF-TOKEN": document
+                                //     .querySelector('meta[name="csrf-token"]')
+                                //     .getAttribute("content"),
+                                "X-CSRF-TOKEN": $(
+                                    'meta[name="csrf-token"]'
+                                ).attr("content"),
+                            },
+                            body: JSON.stringify(dataToSend),
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
                             alert("Data saved : Success", data);
 
                             markers.value[
@@ -721,11 +819,15 @@ export default defineComponent({
                             fetchCustomer();
                             fetchUnit();
                             fetchBiaya();
-                        },
-                        error: function (error) {
-                            console.error("Error saving data:", error);
-                        },
-                    });
+                        } else {
+                            console.error(
+                                "Error saving data:",
+                                response.statusText
+                            );
+                        }
+                    } catch (error) {
+                        console.error("Error saving data:", error);
+                    }
                 } else {
                     console.error("Error: Marker position data is incomplete");
                 }
@@ -734,11 +836,123 @@ export default defineComponent({
             }
         };
 
-        const editSaveFormData = () => {
+        const editSaveFormData = async () => {
             if (selectedMarker.value && selectedMarker.value.id) {
+                // Initialize validation errors and validity flag
+                const validationErrors = {
+                    customers: [],
+                };
+                let isValid = true;
+
+                // Validate selectedMarker and its properties
+                if (!selectedMarker.value) {
+                    console.error("Error: No marker selected for editing");
+                    alert("Error: No marker selected for editing");
+                    return;
+                }
+
+                if (
+                    !Array.isArray(selectedMarker.value.customers) ||
+                    selectedMarker.value.customers.length === 0
+                ) {
+                    validationErrors.customers.push(
+                        "At least one customer is required"
+                    );
+                    isValid = false;
+                } else {
+                    selectedMarker.value.customers.forEach(
+                        (customer, customerIndex) => {
+                            const customerErrors = {
+                                name_customer: "",
+                                satuan: [],
+                            };
+
+                            // Validate customer name
+                            if (!customer.name_customer) {
+                                customerErrors.name_customer =
+                                    "Customer name cannot be empty";
+                                isValid = false;
+                            }
+
+                            if (!Array.isArray(customer.satuan)) {
+                                customerErrors.satuan.push(
+                                    "Satuan must be an array"
+                                );
+                                isValid = false;
+                            } else {
+                                customer.satuan.forEach(
+                                    (satuan, satuanIndex) => {
+                                        const satuanErrors = {
+                                            name_satuan: "",
+                                            jenis_barang_name: "",
+                                            biaya: [],
+                                        };
+
+                                        if (!satuan.name_satuan) {
+                                            satuanErrors.name_satuan =
+                                                "Satuan name cannot be empty";
+                                            isValid = false;
+                                        }
+
+                                        if (!satuan.jenis_barang_name) {
+                                            satuanErrors.jenis_barang_name =
+                                                "Jenis Barang name cannot be empty";
+                                            isValid = false;
+                                        }
+
+                                        if (!Array.isArray(satuan.biaya)) {
+                                            satuanErrors.biaya.push(
+                                                "Biaya must be an array"
+                                            );
+                                            isValid = false;
+                                        } else {
+                                            satuan.biaya.forEach(
+                                                (biaya, biayaIndex) => {
+                                                    const biayaErrors = {
+                                                        name_biaya: "",
+                                                        harga: "",
+                                                    };
+
+                                                    if (!biaya.name_biaya) {
+                                                        biayaErrors.name_biaya =
+                                                            "Biaya name cannot be empty";
+                                                        isValid = false;
+                                                    }
+
+                                                    if (!biaya.harga) {
+                                                        biayaErrors.harga =
+                                                            "Harga cannot be empty";
+                                                        isValid = false;
+                                                    }
+
+                                                    satuanErrors.biaya.push(
+                                                        biayaErrors
+                                                    );
+                                                }
+                                            );
+                                        }
+
+                                        customerErrors.satuan.push(
+                                            satuanErrors
+                                        );
+                                    }
+                                );
+                            }
+
+                            validationErrors.customers.push(customerErrors);
+                        }
+                    );
+                }
+
+                if (!isValid) {
+                    alert(
+                        "Ada kesalahan dalam input form. Silakan periksa dan coba lagi."
+                    );
+                    return; // Stop execution if validation fails
+                }
+
                 const formData = {
                     notes: selectedMarker.value.notes,
-                    // satuan: selectedMarker.value.satuan,
                     satuan: selectedMarker.value.customers.flatMap(
                         (customer) => customer.satuan
                     ),
@@ -758,66 +972,94 @@ export default defineComponent({
                     ),
                 };
 
-                $.ajax({
-                    url: `/maps/edit/${selectedMarker.value.id}`,
-                    type: "POST",
-                    contentType: "application/json",
-                    headers: {
-                        "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr(
-                            "content"
-                        ),
-                    },
-                    data: JSON.stringify(formData),
-                    success: function (data) {
-                        alert("Data saved : Success", data);
+                try {
+                    const response = await fetch(
+                        `/maps/edit/${selectedMarker.value.id}`,
+                        {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "X-CSRF-TOKEN": $(
+                                    'meta[name="csrf-token"]'
+                                ).attr("content"),
+                            },
+                            body: JSON.stringify(formData),
+                        }
+                    );
 
-                        // Update the notes of the selectedMarker directly
-                        selectedMarker.value.notes = formInput.notes;
-                        // selectedMarker.value.satuan = formInput.satuan;
+                    if (response.ok) {
+                        const data = await response.json();
+                        alert("Data saved successfully.");
+
+                        // Update data directly on selectedMarker
+                        selectedMarker.value.notes = formData.notes;
                         selectedMarker.value.customers = formData.customers;
 
                         $("#showmarker").hide();
 
+                        // Refresh data
                         fetchData();
                         fetchUser();
                         fetchAgent();
                         fetchCustomer();
                         fetchUnit();
                         fetchBiaya();
-                    },
-                    error: function (error) {
-                        console.error("Error saving data:", error);
-                    },
-                });
+                    } else {
+                        const errorData = await response.json();
+                        console.error("Error saving data:", errorData);
+                        alert("Error saving data: " + errorData.message);
+                    }
+                } catch (error) {
+                    console.error("Error saving data:", error);
+                    alert("Error saving data. Please try again.");
+                }
             } else {
                 console.error("Error: No marker selected for editing");
+                alert("Error: No marker selected for editing");
             }
         };
 
-        const deleteSaveFormData = () => {
+        const deleteSaveFormData = async () => {
             if (selectedMarker.value && selectedMarker.value.id) {
-                $.ajax({
-                    url: `/maps/delete/${selectedMarker.value.id}`,
-                    type: "DELETE",
-                    contentType: "application/json",
-                    headers: {
-                        "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr(
-                            "content"
-                        ),
-                    },
-                    success: function (data) {
+                try {
+                    const response = await fetch(
+                        `/maps/delete/${selectedMarker.value.id}`,
+                        {
+                            method: "DELETE",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "X-CSRF-TOKEN": $(
+                                    'meta[name="csrf-token"]'
+                                ).attr("content"),
+                            },
+                        }
+                    );
+
+                    if (response.ok) {
+                        const data = await response.json();
                         alert("Data deleted : Success", data);
+
+                        // Remove the deleted marker from the markers array
                         const index = markers.value.findIndex(
                             (marker) => marker.id === selectedMarker.value.id
                         );
-                        markers.value.splice(index, 1);
+                        if (index !== -1) {
+                            markers.value.splice(index, 1);
+                        }
+
                         $("#showmarker").hide();
+
+                        // Fetch updated data
                         fetchData();
-                    },
-                    error: function (error) {
-                        console.error("Error deleting data:", error);
-                    },
-                });
+                    } else {
+                        console.error(
+                            "Error deleting data:",
+                            response.statusText
+                        );
+                    }
+                } catch (error) {
+                    console.error("Error deleting data:", error);
+                }
             } else {
                 console.error("Error: No marker selected for deletion");
             }
@@ -921,6 +1163,7 @@ export default defineComponent({
             user,
             zoom,
             agent,
+            validationErrors,
             center,
             satuan,
             biaya,

@@ -117,7 +117,7 @@ Route::get('/maps/user', function () {
 })->middleware(['auth', 'verified', 'role:user|superadmin'])->name('mapsUser');
 
 Route::get('/maps/superuser', function () {
-    return Inertia::render('Maps/MapsSuperUserDemo');
+    return Inertia::render('Maps/MapsSuperUser');
 })->middleware(['auth', 'verified', 'role:superuser|superadmin'])->name('mapsSuperUser');
 
 Route::get('/maps/admin', function () {
