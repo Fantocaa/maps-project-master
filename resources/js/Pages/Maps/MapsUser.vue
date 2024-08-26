@@ -46,15 +46,21 @@ export default defineComponent({
         const address = ref("");
         const user = ref([]);
         const agent = ref([]);
-        const customer = ref([]);
+        // const customer = ref([]);
         const satuan = ref([]);
         const biaya = ref([]);
+        const jenis_barang = ref([]);
         const matchingUser = ref(null);
+        const customerOptions = reactive([]);
+        const zoom = ref(7); // Atur level zoom awal
+        const isLoading = ref(false); // Tambahkan state loading
 
         const getCurrentLocation = () => {
+            isLoading.value = true; // Mulai loading
             if (markers.value.length > 0) {
                 // Set the center to the first marker's position
                 center.value = markers.value[0].position;
+                isLoading.value = false; // Selesai loading
             } else {
                 if (navigator.geolocation) {
                     navigator.geolocation.getCurrentPosition(
@@ -64,15 +70,18 @@ export default defineComponent({
                                 lng: position.coords.longitude,
                             };
                             center.value = userLocation;
+                            isLoading.value = false; // Selesai loading
                         },
                         (error) => {
                             console.error("Error getting location:", error);
+                            isLoading.value = false; // Selesai loading
                         }
                     );
                 } else {
                     console.error(
                         "Geolocation is not supported by this browser."
                     );
+                    isLoading.value = false; // Selesai loading
                 }
             }
         };
@@ -102,37 +111,42 @@ export default defineComponent({
                 name_agent: null,
                 name_customer: null,
                 name_satuan: null,
-                biaya: [{ nama: null, harga: "", harga_modal: "" }],
+                jenis_barang_name: null,
+                // biaya: [{ nama: null, harga: "", harga_modal: "" }],
+                items: [
+                    {
+                        name_satuan: null,
+                        biaya: [{ nama: "", harga: "", harga_modal: "" }],
+                    },
+                ],
             },
         ]);
 
-        const handleMapClick = (event) => {
-            const clickedPosition = {
-                lat: event.latLng.lat(),
-                lng: event.latLng.lng(),
-            };
+        const validationErrors = ref({
+            name_agent: "",
+            name_penerima: "",
+            items: [],
+        });
 
-            // Panggil fungsi reverse geocoding dengan latitude dan longitude
-            getReverseGeocoding(clickedPosition.lat, clickedPosition.lng)
-                .then((receivedAddress) => {
-                    if (receivedAddress) {
-                        address.value = receivedAddress; // Update the address variable with the received address
-                    }
-                })
-                .catch((error) => console.error(error));
-
-            markers.value.push({
-                position: clickedPosition,
-                label: "",
-                title: "New Marker",
-                showForm: true,
-            });
-
-            center.value = clickedPosition;
-            klikmarker.value = [];
-            $("#showmarker").hide();
-
-            saveMapPosition(); // Save map position after map click
+        const resetForm = (index) => {
+            // Reset data formulir untuk marker tertentu
+            if (index >= 0 && index < formInput.value.length) {
+                const input = formInput.value[index];
+                input.notes = "";
+                input.name_penerima = "";
+                input.name_agent = null;
+                input.name_customer = null;
+                input.name_satuan = null;
+                input.jenis_barang_name = null;
+                input.items.forEach((item) => {
+                    item.name_satuan = null;
+                    item.biaya.forEach((biaya) => {
+                        biaya.nama = "";
+                        biaya.harga = "";
+                        biaya.harga_modal = "";
+                    });
+                });
+            }
         };
 
         const handleMapIdle = () => {
@@ -170,19 +184,27 @@ export default defineComponent({
         };
 
         const handleMarkerClick = (clickedMarker) => {
+            // Temukan indeks marker yang sesuai
             const index = markers.value.findIndex(
                 (marker) =>
                     marker.position.lat === clickedMarker.position.lat &&
                     marker.position.lng === clickedMarker.position.lng
             );
 
-            // Check if the clicked marker has an ID
-            if (!markers.value[index].id) {
-                // Marker does not have an ID, remove it directly
+            if (index === -1) {
+                console.error("Marker not found");
+                return;
+            }
+
+            const clickedMarkerData = markers.value[index];
+
+            if (!clickedMarkerData.id) {
+                // Marker tidak memiliki ID, hapus langsung
                 markers.value.splice(index, 1);
             } else {
+                // Struktur data terbaru dengan multiple customers
                 selectedMarker.value = {
-                    id: markers.value[index].id,
+                    id: clickedMarkerData.id,
                     notes: clickedMarker.notes,
                     name: clickedMarker.name,
                     date: clickedMarker.date,
@@ -190,39 +212,46 @@ export default defineComponent({
                     name_company: clickedMarker.name_company,
                     name_penerima: clickedMarker.name_penerima,
                     name_agent: clickedMarker.name_agent,
-                    name_customer: clickedMarker.name_customer,
-                    // satuan: clickedMarker.satuan,
-                    satuan: clickedMarker.satuan.map((satuan) => ({
-                        name_satuan: satuan.name_satuan,
-                        biaya: satuan.biaya.map((biaya) => ({
-                            name_biaya: biaya.name_biaya,
-                            harga: biaya.harga,
-                            harga_modal: biaya.harga_modal,
+                    // name_customer: clickedMarker.name_customer,
+                    customers: clickedMarker.customers.map((customer) => ({
+                        name_customer: customer.name_customer,
+                        satuan: customer.satuan.map((satuan) => ({
+                            name_satuan: satuan.name_satuan,
+                            jenis_barang_name: satuan.jenis_barang_name || null,
+                            biaya: satuan.biaya.map((biaya) => ({
+                                name_biaya: biaya.name_biaya,
+                                harga: biaya.harga,
+                                harga_modal: biaya.harga_modal,
+                                isSaved: true, // Menandakan bahwa data ini sudah disimpan di database
+                            })),
+                            isSaved: true, // Menandakan bahwa data ini sudah disimpan di database
                         })),
+                        isSaved: true, // Menandakan bahwa data ini sudah disimpan di database
                     })),
                     showForm: true,
                 };
-                // console.log(selectedMarker.value);
+
                 $("#showmarker").show();
             }
 
-            // zoom.value = 16;
+            // console.log(selectedMarker.value);
+
+            // Update zoom dan center
             center.value = clickedMarker.position;
 
-            // Manually update the map
             if (mapInstance.value) {
                 mapInstance.value.setZoom(zoom.value);
                 mapInstance.value.setCenter(center.value);
             }
 
-            // Call getReverseGeocoding with the clicked marker's position
+            // Panggil getReverseGeocoding dengan posisi marker yang diklik
             getReverseGeocoding(
                 clickedMarker.position.lat,
                 clickedMarker.position.lng
             )
                 .then((addr) => {
                     if (addr) {
-                        address.value = addr; // Update the address variable with the received address
+                        address.value = addr; // Update address dengan alamat yang diterima
                     }
                 })
                 .catch((error) => console.error(error));
@@ -292,41 +321,74 @@ export default defineComponent({
                 let data = await response.json();
 
                 // Filter data berdasarkan name_company yang sama dengan name_company dari matchingUser
+
                 data = data.filter(
                     (map) =>
                         matchingUser.value.view_company.includes(
                             map.name_company
                         ) ||
                         matchingUser.value.company.includes(map.name_company) ||
-                        matchingUser.value.company.includes(map.name_customer)
+                        matchingUser.value.company.some((company) =>
+                            map.customers.some(
+                                (customer) => customer.name_customer === company
+                            )
+                        )
                 );
 
                 // console.log(data);
 
-                markers.value = data.map((map) => ({
-                    position: {
-                        lat: parseFloat(map.lat),
-                        lng: parseFloat(map.lng),
-                    },
-                    id: map.id,
-                    notes: map.notes,
-                    name: map.name,
-                    date: map.date,
-                    lokasi: map.lokasi,
-                    name_agent: map.name_agent,
-                    name_customer: map.name_customer,
-                    name_company: map.name_company,
-                    name_penerima: map.name_penerima,
-                    satuan: map.satuan.map((satuan) => ({
-                        name_satuan: satuan.name_satuan,
-                        biaya: satuan.biaya.map((biaya) => ({
-                            name_biaya: biaya.name_biaya,
-                            harga: biaya.harga,
-                            harga_modal: biaya.harga_modal,
+                markers.value = data.map((map) => {
+                    return {
+                        position: {
+                            lat: parseFloat(map.lat),
+                            lng: parseFloat(map.lng),
+                        },
+                        id: map.id,
+                        notes: map.notes,
+                        name: map.name,
+                        date: map.date,
+                        lokasi: map.lokasi,
+                        name_agent: map.name_agent,
+                        name_company: map.name_company,
+                        name_penerima: map.name_penerima,
+                        // Menggunakan seluruh data customers
+                        customers: map.customers.map((customer) => ({
+                            name_customer: customer.name_customer || null,
+                            satuan: customer.satuan.map((satuan) => ({
+                                name_satuan: satuan.name_satuan || null,
+                                jenis_barang_name:
+                                    satuan.jenis_barang_name || null,
+                                biaya: satuan.biaya.map((biaya) => ({
+                                    name_biaya: biaya.name_biaya || null,
+                                    harga: biaya.harga || null,
+                                    harga_modal: biaya.harga_modal || null,
+                                })),
+                            })),
                         })),
-                    })),
-                    showForm: false,
-                }));
+                        showForm: false,
+                    };
+                });
+
+                // Filter tambahan untuk memastikan hanya customer yang relevan yang ditampilkan
+                markers.value = markers.value.map((marker) => {
+                    // Cek apakah pengguna berada di perusahaan yang sama dengan perusahaan pembuat pin
+                    // const isUserInCompany = matchingUser.value.view_company.includes(
+                    const isUserInCompany = matchingUser.value.company.includes(
+                        marker.name_company
+                    );
+
+                    return {
+                        ...marker,
+                        customers: isUserInCompany
+                            ? marker.customers // Tampilkan semua customers jika pengguna berada di perusahaan yang sama
+                            : marker.customers.filter((customer) =>
+                                  //   matchingUser.value.view_company.includes(
+                                  matchingUser.value.company.includes(
+                                      customer.name_customer
+                                  )
+                              ), // Filter customers jika pengguna tidak berada di perusahaan yang sama
+                    };
+                });
 
                 // Simpan data ke localStorage
                 // localStorage.setItem("markers", JSON.stringify(markers.value));
@@ -337,21 +399,37 @@ export default defineComponent({
             // }
         };
 
-        const fetchCustomer = async () => {
-            try {
-                const response = await axios.get("/company");
-                const data = response.data;
-                customer.value = data.map((customer) => customer.name_company);
-            } catch (error) {
-                console.error("Error fetching data:", error);
-            }
-        };
-
         const fetchAgent = async () => {
             try {
                 const response = await axios.get("/agent");
                 const data = response.data;
                 agent.value = data.map((agent) => agent.name_agent);
+            } catch (error) {
+                console.error("Error fetching data:", error);
+            }
+        };
+
+        const fetchJenisBarang = async () => {
+            try {
+                const response = await axios.get("/jenis_barang");
+                const data = response.data;
+                jenis_barang.value = data.map(
+                    (jenis_barang) => jenis_barang.jenis_barang_name
+                );
+                // console.log(jenis_barang.value);
+            } catch (error) {
+                console.error("Error fetching data:", error);
+            }
+        };
+
+        const fetchCustomer = async () => {
+            try {
+                const response = await axios.get("/company");
+                const data = response.data;
+                // customer.value = data.map((customer) => customer.name_company);
+                customerOptions.push(
+                    ...data.map((customer) => customer.name_company)
+                );
             } catch (error) {
                 console.error("Error fetching data:", error);
             }
@@ -368,11 +446,6 @@ export default defineComponent({
             }
         };
 
-        const apiData = reactive({
-            biaya: [],
-            // Anda bisa menambahkan ref lain di sini jika perlu
-        });
-
         const fetchBiaya = async () => {
             try {
                 const response = await axios.get("/biaya_name");
@@ -384,222 +457,10 @@ export default defineComponent({
             }
         };
 
-        //add new marker
-
-        const tambahItem = () => {
-            formInput.value.push({
-                name_satuan: null,
-                biaya: [{ nama: "", harga: "", harga_modal: "" }],
-            });
-        };
-
-        const kurangiItem = () => {
-            if (formInput.value.length > 1) {
-                formInput.value.pop();
-            }
-        };
-
-        const tambahBiaya = (index) => {
-            formInput.value[index].biaya.push({
-                nama: "",
-                harga: "",
-                harga_modal: "",
-            });
-        };
-
-        const kurangiBiaya = (index) => {
-            if (formInput.value[index].biaya.length > 1) {
-                formInput.value[index].biaya.pop();
-            }
-        };
-
-        //showmarker
-
-        const tambahItemBiaya = () => {
-            selectedMarker.value.satuan.push({
-                name_satuan: null,
-                biaya: [{ name_biaya: "", harga: "", harga_modal: "" }],
-            });
-        };
-
-        const kurangiItemBiaya = () => {
-            if (selectedMarker.value.satuan.length > 1) {
-                selectedMarker.value.satuan.pop();
-            }
-        };
-
-        const tambahBiayaBiaya = (index) => {
-            selectedMarker.value.satuan[index].biaya.push({
-                name_biaya: "",
-                harga: "",
-                harga_modal: "",
-            });
-        };
-
-        const kurangiBiayaBiaya = (index, biayaIndex) => {
-            if (selectedMarker.value.satuan[index].biaya.length > 1) {
-                selectedMarker.value.satuan[index].biaya.splice(biayaIndex, 1);
-            }
-        };
-
-        const saveFormData = () => {
-            if (markers.value.length > 0) {
-                const lastMarker = markers.value[markers.value.length - 1];
-
-                if (
-                    lastMarker.position &&
-                    lastMarker.position.lat &&
-                    lastMarker.position.lng
-                ) {
-                    const formData = {
-                        notes: formInput.value.notes,
-                        lat: lastMarker.position.lat,
-                        lng: lastMarker.position.lng,
-                        name: props.auth.user.name,
-                        lokasi: address.value,
-                        name_penerima: formInput.value.name_penerima,
-                        name_company: matchingUser.value
-                            ? matchingUser.value.company.join(", ")
-                            : "Loading...",
-                        name_agent: formInput.value.name_agent,
-                        name_customer: formInput.value.name_customer,
-                        satuan: formInput.value.map((item) => {
-                            return {
-                                name_satuan: item.name_satuan,
-                                biaya: item.biaya.map((biaya) => {
-                                    return {
-                                        name_biaya: biaya.nama,
-                                        harga: biaya.harga,
-                                        harga_modal: biaya.harga_modal,
-                                    };
-                                }),
-                            };
-                        }),
-                    };
-
-                    // Menggunakan Ajax jQuery untuk mengirim data
-                    $.ajax({
-                        type: "POST",
-                        contentType: "application/json",
-                        headers: {
-                            "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr(
-                                "content"
-                            ),
-                        },
-                        url: "/maps/store",
-                        data: JSON.stringify(formData),
-                        success: function (data) {
-                            alert("Data saved : Success", data);
-
-                            markers.value[
-                                markers.value.length - 1
-                            ].showForm = false;
-
-                            // Reset formInput.value to its initial state
-                            formInput.value = [
-                                {
-                                    notes: "",
-                                    name_penerima: "",
-                                    name_agent: null,
-                                    name_customer: null,
-                                    name_satuan: null,
-                                    biaya: [
-                                        {
-                                            nama: "",
-                                            harga: "",
-                                            harga_modal: "",
-                                        },
-                                    ],
-                                },
-                            ];
-                            fetchData();
-                            fetchUser();
-                            fetchAgent();
-                            fetchCustomer();
-                            fetchUnit();
-                            fetchBiaya();
-                        },
-                        error: function (error) {
-                            console.error("Error saving data:", error);
-                        },
-                    });
-                } else {
-                    console.error("Error: Marker position data is incomplete");
-                }
-            } else {
-                console.error("Error: No markers available to save");
-            }
-        };
-
-        const editSaveFormData = () => {
-            if (selectedMarker.value && selectedMarker.value.id) {
-                const formData = {
-                    notes: selectedMarker.value.notes,
-                    satuan: selectedMarker.value.satuan,
-                };
-
-                $.ajax({
-                    url: `/maps/edit/${selectedMarker.value.id}`,
-                    type: "POST",
-                    contentType: "application/json",
-                    headers: {
-                        "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr(
-                            "content"
-                        ),
-                    },
-                    data: JSON.stringify(formData),
-                    success: function (data) {
-                        alert("Data saved : Success", data);
-                        // Update the notes of the selectedMarker directly
-                        selectedMarker.value.notes = formInput.notes;
-                        selectedMarker.value.satuan = formInput.satuan;
-                        $("#showmarker").hide();
-                        fetchData();
-                        fetchUser();
-                        fetchAgent();
-                        fetchCustomer();
-                        fetchUnit();
-                        fetchBiaya();
-                    },
-                    error: function (error) {
-                        console.error("Error saving data:", error);
-                    },
-                });
-            } else {
-                console.error("Error: No marker selected for editing");
-            }
-        };
-
-        const deleteSaveFormData = () => {
-            if (selectedMarker.value && selectedMarker.value.id) {
-                $.ajax({
-                    url: `/maps/delete/${selectedMarker.value.id}`,
-                    type: "DELETE",
-                    contentType: "application/json",
-                    headers: {
-                        "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr(
-                            "content"
-                        ),
-                    },
-                    success: function (data) {
-                        alert("Data deleted : Success", data);
-                        const index = markers.value.findIndex(
-                            (marker) => marker.id === selectedMarker.value.id
-                        );
-                        markers.value.splice(index, 1);
-                        $("#showmarker").hide();
-                        fetchData();
-                    },
-                    error: function (error) {
-                        console.error("Error deleting data:", error);
-                    },
-                });
-            } else {
-                console.error("Error: No marker selected for deletion");
-            }
-        };
-
-        const zoom = ref(7); // Atur level zoom awal
+        const apiData = reactive({
+            biaya: [],
+            // Anda bisa menambahkan ref lain di sini jika perlu
+        });
 
         const setPlace = (place) => {
             // Handle place changed event
@@ -623,17 +484,45 @@ export default defineComponent({
         const closeShowMarker = () => {
             if (markers.value.length > 0) {
                 const lastMarker = markers.value[markers.value.length - 1];
+
                 if (lastMarker.id) {
                     // If the marker has an id, only hide the form
                     lastMarker.showForm = false;
                 } else {
                     // If the marker doesn't have an id, remove it from the array
                     markers.value.pop();
-                    // Set showForm to false for the new last marker
+
+                    // Set showForm to false for the new last marker, if any
                     if (markers.value.length > 0) {
                         markers.value[
                             markers.value.length - 1
                         ].showForm = false;
+                    }
+
+                    // Check if the last customer entry is empty
+                    const lastForm =
+                        formInput.value[formInput.value.length - 1];
+                    const isLastFormEmpty =
+                        !lastForm.notes &&
+                        !lastForm.name_penerima &&
+                        !lastForm.name_agent &&
+                        !lastForm.name_customer &&
+                        !lastForm.name_satuan &&
+                        lastForm.items.every(
+                            (item) =>
+                                !item.name_satuan &&
+                                !item.jenis_barang_name &&
+                                item.biaya.every(
+                                    (biaya) =>
+                                        !biaya.nama &&
+                                        !biaya.harga &&
+                                        !biaya.harga_modal
+                                )
+                        );
+
+                    if (isLastFormEmpty) {
+                        // Remove the last customer entry if it is empty
+                        kurangiCustomer(formInput.value.length - 1);
                     }
                 }
             }
@@ -648,12 +537,14 @@ export default defineComponent({
         };
 
         onMounted(async () => {
+            isLoading.value = true; // Mulai loading
             // fetchData();
             fetchAgent();
             fetchCustomer();
             fetchUser();
             fetchUnit();
             fetchBiaya();
+            fetchJenisBarang();
             loadMapPosition();
             handleMapIdle();
             // Then call fetchData every 30 seconds
@@ -662,13 +553,28 @@ export default defineComponent({
             // getReverseGeocoding();
             // handleMarkerClick();
             // $("#showmarker").hide();
+            isLoading.value = false; // Selesai loading
         });
 
+        const handleClickRefresh = () => {
+            isLoading.value = true; // Mulai loading
+            fetchUser();
+            fetchData();
+            fetchAgent();
+            fetchJenisBarang();
+            fetchCustomer();
+            fetchUnit();
+            fetchBiaya();
+            // Anda bisa memanggil fungsi lainnya jika diperlukan
+            isLoading.value = false; // Selesai loading
+        };
+
         return {
+            handleClickRefresh,
             user,
             zoom,
             agent,
-            customer,
+            validationErrors,
             center,
             satuan,
             biaya,
@@ -676,29 +582,20 @@ export default defineComponent({
             logout,
             markers,
             address,
+            customerOptions,
             setPlace,
+            isLoading,
             matchingUser,
-            kurangiBiaya,
             formInput,
-            tambahBiaya,
-            tambahItem,
-            kurangiItem,
             closeModal,
             klikmarker,
             defineSelectedMarkerValueSatuan,
-            handleMapClick,
             handleMarkerClick,
-            deleteSaveFormData,
-            editSaveFormData,
             closeShowMarker,
             selectedMarker,
             mapWasMounted,
-            saveFormData,
-            tambahItemBiaya,
-            kurangiItemBiaya,
-            tambahBiayaBiaya,
-            kurangiBiayaBiaya,
             options,
+            jenis_barang,
             handleMapIdle,
             saveMapPosition,
             loadMapPosition,
@@ -711,9 +608,15 @@ export default defineComponent({
     <Head title="Maps" />
     <div class="mx-auto relative h-full">
         <div
-            class="lg:hidden top-4 md:top-4 w-full px-4 md:px-8 pt-6 lg:pt-0 text-sm"
+            v-if="isLoading"
+            class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-50"
         >
-            <div class="relative mb-6">
+            <div
+                class="spinner-border animate-spin inline-block w-8 h-8 border-4 rounded-full text-blue-500"
+            ></div>
+        </div>
+        <div class="hidden lg:block lg:absolute top-4 md:top-4 px-2 md:px-8">
+            <div class="relative">
                 <img
                     src="/images/icon/search.svg"
                     alt="search"
@@ -722,7 +625,7 @@ export default defineComponent({
                 <GMapAutocomplete
                     placeholder="Cari Lokasi"
                     @place_changed="setPlace"
-                    class="px-4 py-2 md:py-[10px] w-64 md:w-[576px] xl:w-[800px] rounded-full focus:outline-none focus:ring focus:border-blue-300 lg:shadow-xl border pl-14 text:sm lg:text-lg"
+                    class="md:w-[576px] xl:w-[800px] px-4 py-4 md:py-2 2xl:py-4 border rounded-full focus:outline-none focus:ring focus:border-blue-300 shadow-xl border-none pl-14 text-lg"
                 >
                 </GMapAutocomplete>
             </div>
@@ -750,7 +653,7 @@ export default defineComponent({
 
             <div>
                 <div
-                    class="hidden lg:block lg:absolute top-4 md:top-4 w-full px-2 md:px-8"
+                    class="hidden lg:block lg:absolute top-4 md:top-4 px-2 md:px-8"
                 >
                     <div class="relative">
                         <img
@@ -761,16 +664,29 @@ export default defineComponent({
                         <GMapAutocomplete
                             placeholder="Cari Lokasi"
                             @place_changed="setPlace"
-                            class="px-4 py-4 md:py-2 2xl:py-4 w-full md:w-[576px] xl:w-[800px] border rounded-full focus:outline-none focus:ring focus:border-blue-300 shadow-xl border-none pl-14 text-lg"
+                            class="px-4 py-4 md:py-2 2xl:py-4 md:w-[576px] xl:w-[800px] border rounded-full focus:outline-none focus:ring focus:border-blue-300 shadow-xl border-none pl-14 text-lg"
                         >
                         </GMapAutocomplete>
                     </div>
                 </div>
 
                 <div
-                    class="pt-6 md:pt-0 absolute right-2 top-0 md:top-6 md:right-8 z-10 flex justify-end md:px-0"
+                    class="pt-6 md:pt-0 absolute right-2 top-0 md:top-6 md:right-8 z-10 flex justify-end md:px-0 gap-4"
                 >
                     <!-- Open the modal using ID.showModal() method -->
+
+                    <button
+                        class="bg-green-600 border-none text-white hover:bg-green-700 text-base pl-10 relative rounded-full btn px-4 shadow-xl py-2"
+                        @click="handleClickRefresh"
+                    >
+                        <img
+                            src="/images/icon/refresh.svg"
+                            alt="User"
+                            class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5"
+                        />
+                        Refresh
+                    </button>
+
                     <button
                         class="bg-red-600 border-none text-white hover:bg-red-700 text-base pl-10 relative rounded-full btn px-4 shadow-xl py-2"
                         onclick="my_modal_2.showModal()"
@@ -863,377 +779,343 @@ export default defineComponent({
                 style="display: none"
             >
                 <div
-                    class="bg-white w-full lg:w-[512px] xl:w-[660px] max-h-[1024px] rounded-xl p-8 relative shadow-xl mx-4 md:mx-24"
+                    class="bg-white w-full lg:w-[512px] xl:w-[660px] max-h-[1024px] rounded-xl p-6 relative shadow-xl mx-4 md:mx-24"
                 >
                     <form @submit.prevent="editSaveFormData">
                         <!-- <div class="overflow-y-scroll max-h-[448px]"> -->
-                        <h1 class="pb-4 w-[90%]">
+                        <h1 class="pb-4 w-[90%] px-2">
                             Alamat :
                             {{ selectedMarker.lokasi }}
                         </h1>
                         <div
                             class="max-h-[448px] xl:max-h-[384px] 2xl:max-h-[448px] overflow-auto"
                         >
-                            <h1 class="pb-4 w-[90%]">
+                            <h1 class="pb-4 w-[90%] px-2">
                                 Nama Penerima :
                                 {{ selectedMarker.name_penerima }}
                             </h1>
-                            <h1 class="pb-4 w-[90%]">
+                            <h1 class="pb-4 w-[90%] px-2">
                                 Nama Agent :
                                 {{ selectedMarker.name_agent }}
                             </h1>
-                            <h1 class="pb-4 w-[90%]">
+                            <!-- <h1 class="pb-4 w-[90%]">
                                 Nama Customer :
                                 {{ selectedMarker.name_customer }}
-                            </h1>
-                            <div>
+                            </h1> -->
+                            <div class="px-2">
                                 <div
-                                    class="pb-2"
+                                    class="p-4 border rounded mb-4"
                                     v-for="(
-                                        satuanItem, index
-                                    ) in selectedMarker.satuan"
-                                    :key="index"
+                                        customer, customerIndex
+                                    ) in selectedMarker.customers"
+                                    :key="customerIndex"
                                 >
-                                    <div>
-                                        <div class="flex gap-2 md:gap-4 pb-2">
-                                            <div class="w-full">
-                                                <label
-                                                    :for="'name_satuan' + index"
-                                                    class="pb-2"
-                                                    >Satuan:</label
-                                                >
-                                                <v-select
-                                                    disabled
-                                                    :id="'name_satuan' + index"
-                                                    :options="satuan"
-                                                    v-model="
-                                                        satuanItem.name_satuan
-                                                    "
-                                                    class="w-full"
-                                                />
-                                                <p
-                                                    v-if="
-                                                        !satuanItem.name_satuan
-                                                    "
-                                                    class="text-red-500"
-                                                >
-                                                    Satuan tidak boleh kosong
-                                                </p>
-                                            </div>
-                                            <!-- <div class="flex pt-2 gap-2">
-                                                <button
-                                                    v-if="
+                                    <div class="w-full flex gap-4">
+                                        <div class="w-full pb-2">
+                                            <label
+                                                :for="
+                                                    'name_customer' +
+                                                    customerIndex
+                                                "
+                                                class="pb-2"
+                                                >Nama Customer
+                                                {{ customerIndex + 1 }}:</label
+                                            >
+                                            <v-select
+                                                v-if="
+                                                    customerOptions.length > 0
+                                                "
+                                                :disabled="
+                                                    customer.isSaved ||
+                                                    !(
                                                         matchingUser &&
                                                         matchingUser.company.includes(
                                                             selectedMarker.name_company
                                                         )
-                                                    "
-                                                    type="button"
-                                                    class="btn bg-green-500 text-white hover:bg-green-700"
-                                                    @click="tambahItemBiaya"
-                                                >
-                                                    +
-                                                </button>
-                                                <button
-                                                    v-if="
-                                                        matchingUser &&
-                                                        matchingUser.company.includes(
-                                                            selectedMarker.name_company
-                                                        )
-                                                    "
-                                                    type="button"
-                                                    class="btn bg-red-500 text-white hover:bg-red-700"
-                                                    @click="kurangiItemBiaya"
-                                                >
-                                                    -
-                                                </button>
-                                            </div> -->
-                                        </div>
+                                                    )
+                                                "
+                                                :id="
+                                                    'name_customer' +
+                                                    customerIndex
+                                                "
+                                                :options="customerOptions"
+                                                v-model="customer.name_customer"
+                                                class="w-full"
+                                            />
 
-                                        <div class="flex gap-4">
-                                            <div class="flex flex-col w-full">
-                                                <div
-                                                    v-for="(
-                                                        biayaItem, biayaIndex
-                                                    ) in satuanItem.biaya"
-                                                    :key="biayaIndex"
-                                                    class="w-full flex gap-2"
-                                                >
-                                                    <div
-                                                        :class="[
-                                                            'w-full lg:grid gap-4',
-                                                            {
-                                                                'grid-cols-2':
-                                                                    !isMatchingCompany,
-                                                                'xl:grid-cols-3':
-                                                                    isMatchingCompany,
-                                                            },
-                                                        ]"
-                                                    >
-                                                        <div class="pb-2">
-                                                            <label
-                                                                :for="
-                                                                    'biaya' +
-                                                                    index +
-                                                                    '-' +
-                                                                    biayaIndex
-                                                                "
-                                                                class=""
-                                                                >Nama Biaya
-                                                                {{
-                                                                    biayaIndex +
-                                                                    1
-                                                                }}:</label
-                                                            >
-                                                            <v-select
-                                                                disabled
-                                                                :id="
-                                                                    'biaya' +
-                                                                    index +
-                                                                    '-' +
-                                                                    biayaIndex
-                                                                "
-                                                                v-model="
-                                                                    biayaItem.name_biaya
-                                                                "
-                                                                :options="
-                                                                    apiData.biaya
-                                                                "
-                                                                class="w-full rounded-lg text-xs"
-                                                            />
-                                                            <p
-                                                                v-if="
-                                                                    !biayaItem.name_biaya
-                                                                "
-                                                                class="text-red-500"
-                                                            >
-                                                                Nama Biaya tidak
-                                                                boleh kosong
-                                                            </p>
-                                                        </div>
-                                                        <div class="pb-2">
-                                                            <label
-                                                                :for="
-                                                                    'biaya' +
-                                                                    index +
-                                                                    '-' +
-                                                                    biayaIndex
-                                                                "
-                                                                >Harga Jual
-                                                                {{
-                                                                    biayaIndex +
-                                                                    1
-                                                                }}:</label
-                                                            >
-                                                            <input
-                                                                disabled
-                                                                :id="
-                                                                    'biaya' +
-                                                                    index +
-                                                                    '-' +
-                                                                    biayaIndex
-                                                                "
-                                                                v-model="
-                                                                    biayaItem.harga
-                                                                "
-                                                                class="w-full rounded-lg text-xs cursor-not-allowed"
-                                                                placeholder="isi Nama Harga"
-                                                                type="number"
-                                                            />
-                                                            <p
-                                                                v-if="
-                                                                    !biayaItem.harga
-                                                                "
-                                                                class="text-red-500"
-                                                            >
-                                                                Harga Jual tidak
-                                                                boleh kosong
-                                                            </p>
-                                                        </div>
-                                                        <!-- <div
-                                                            :class="{
-                                                                hidden: !matchingUser.company.includes(
-                                                                    selectedMarker.name_company
-                                                                ),
-                                                            }"
+                                            <p
+                                                v-if="!customer.name_customer"
+                                                class="text-red-500"
+                                            >
+                                                Customer tidak boleh kosong
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div
+                                        class="pb-2"
+                                        v-for="(item, index) in customer.satuan"
+                                        :key="index"
+                                    >
+                                        <div>
+                                            <div
+                                                class="flex gap-2 md:gap-4 pb-2"
+                                            >
+                                                <div class="w-full flex gap-4">
+                                                    <div class="w-full">
+                                                        <label
+                                                            :for="
+                                                                'name_satuan' +
+                                                                customerIndex
+                                                            "
                                                             class="pb-2"
+                                                            >Satuan
+                                                            {{
+                                                                index + 1
+                                                            }}:</label
                                                         >
-                                                            <label
-                                                                :for="
-                                                                    'biaya' +
-                                                                    index +
-                                                                    '-' +
-                                                                    biayaIndex
-                                                                "
-                                                                >Harga Modal
-                                                                {{
-                                                                    biayaIndex +
-                                                                    1
-                                                                }}:</label
-                                                            >
-                                                            <input
-                                                                :disabled="
-                                                                    !(
-                                                                        matchingUser &&
-                                                                        matchingUser.company.includes(
-                                                                            selectedMarker.name_company
-                                                                        )
+                                                        <v-select
+                                                            :disabled="
+                                                                item.isSaved ||
+                                                                !(
+                                                                    matchingUser &&
+                                                                    matchingUser.company.includes(
+                                                                        selectedMarker.name_company
                                                                     )
-                                                                "
-                                                                :id="
-                                                                    'biaya' +
-                                                                    index +
-                                                                    '-' +
-                                                                    biayaIndex
-                                                                "
-                                                                v-model="
-                                                                    biayaItem.harga_modal
-                                                                "
-                                                                class="w-full rounded-lg text-xs"
-                                                                placeholder="isi Nama Harga"
-                                                                type="number"
-                                                            />
-                                                            <p
-                                                                v-if="
-                                                                    !biayaItem.harga_modal
-                                                                "
-                                                                class="text-red-500"
-                                                            >
-                                                                Harga Modal
-                                                                tidak boleh
-                                                                kosong
-                                                            </p>
-                                                        </div> -->
+                                                                )
+                                                            "
+                                                            :id="
+                                                                'name_satuan' +
+                                                                customerIndex +
+                                                                '-' +
+                                                                index
+                                                            "
+                                                            :options="satuan"
+                                                            v-model="
+                                                                item.name_satuan
+                                                            "
+                                                            class="w-full"
+                                                        />
+                                                        <p
+                                                            v-if="
+                                                                !item.name_satuan
+                                                            "
+                                                            class="text-red-500"
+                                                        >
+                                                            Satuan tidak boleh
+                                                            kosong
+                                                        </p>
                                                     </div>
-                                                    <!-- <div
-                                                        class="flex gap-2 pt-2 lg:hidden"
-                                                    >
-                                                        <button
-                                                            v-if="
-                                                                matchingUser &&
-                                                                matchingUser.company.includes(
-                                                                    selectedMarker.name_company
-                                                                )
+                                                    <div class="w-full">
+                                                        <label
+                                                            :for="
+                                                                'jenis_barang_name' +
+                                                                customerIndex +
+                                                                '-' +
+                                                                index
                                                             "
-                                                            type="button"
-                                                            class="btn bg-green-500 text-white hover:bg-green-700"
-                                                            @click="
-                                                                tambahBiayaBiaya(
-                                                                    index
-                                                                )
-                                                            "
+                                                            class="pb-2"
+                                                            >Jenis Barang
+                                                            {{
+                                                                index + 1
+                                                            }}:</label
                                                         >
-                                                            +
-                                                        </button>
-                                                        <button
+                                                        <v-select
+                                                            :disabled="
+                                                                item.isSaved ||
+                                                                !(
+                                                                    matchingUser &&
+                                                                    matchingUser.company.includes(
+                                                                        selectedMarker.name_company
+                                                                    )
+                                                                )
+                                                            "
+                                                            :id="
+                                                                'jenis_barang_name' +
+                                                                customerIndex +
+                                                                '-' +
+                                                                index
+                                                            "
+                                                            :options="
+                                                                jenis_barang
+                                                            "
+                                                            v-model="
+                                                                item.jenis_barang_name
+                                                            "
+                                                            class="w-full"
+                                                        />
+                                                        <p
                                                             v-if="
-                                                                matchingUser &&
-                                                                matchingUser.company.includes(
-                                                                    selectedMarker.name_company
-                                                                )
+                                                                !item.jenis_barang_name
                                                             "
-                                                            type="button"
-                                                            class="btn bg-red-500 text-white hover:bg-red-700"
-                                                            @click="
-                                                                kurangiBiayaBiaya(
-                                                                    index
-                                                                )
-                                                            "
+                                                            class="text-red-500"
                                                         >
-                                                            -
-                                                        </button>
-                                                    </div> -->
+                                                            Jenis Barang tidak
+                                                            boleh kosong
+                                                        </p>
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <!-- <div
-                                                class="gap-2 pt-2 hidden lg:flex"
-                                            >
-                                                <button
-                                                    v-if="
-                                                        matchingUser &&
-                                                        matchingUser.company.includes(
-                                                            selectedMarker.name_company
-                                                        )
-                                                    "
-                                                    type="button"
-                                                    class="btn bg-green-500 text-white hover:bg-green-700"
-                                                    @click="
-                                                        tambahBiayaBiaya(index)
-                                                    "
+
+                                            <div class="flex gap-4">
+                                                <div
+                                                    class="flex flex-col w-full"
                                                 >
-                                                    +
-                                                </button>
-                                                <button
-                                                    v-if="
-                                                        matchingUser &&
-                                                        matchingUser.company.includes(
-                                                            selectedMarker.name_company
-                                                        )
-                                                    "
-                                                    type="button"
-                                                    class="btn bg-red-500 text-white hover:bg-red-700"
-                                                    @click="
-                                                        kurangiBiayaBiaya(index)
-                                                    "
-                                                >
-                                                    -
-                                                </button>
-                                            </div> -->
+                                                    <div
+                                                        v-for="(
+                                                            biaya, biayaIndex
+                                                        ) in item.biaya"
+                                                        :key="biayaIndex"
+                                                        class="w-full flex gap-2"
+                                                    >
+                                                        <div
+                                                            class="w-full lg:grid gap-4 grid-cols-2"
+                                                        >
+                                                            <div class="pb-2">
+                                                                <label
+                                                                    :for="
+                                                                        'biaya' +
+                                                                        index +
+                                                                        '-' +
+                                                                        biayaIndex +
+                                                                        '-' +
+                                                                        customerIndex
+                                                                    "
+                                                                    >Nama Biaya
+                                                                    {{
+                                                                        biayaIndex +
+                                                                        1
+                                                                    }}:</label
+                                                                >
+                                                                <v-select
+                                                                    :disabled="
+                                                                        biaya.isSaved ||
+                                                                        !(
+                                                                            matchingUser &&
+                                                                            matchingUser.company.includes(
+                                                                                selectedMarker.name_company
+                                                                            )
+                                                                        )
+                                                                    "
+                                                                    :id="
+                                                                        'biaya' +
+                                                                        customerIndex +
+                                                                        '-' +
+                                                                        index +
+                                                                        '-' +
+                                                                        biayaIndex
+                                                                    "
+                                                                    v-model="
+                                                                        biaya.name_biaya
+                                                                    "
+                                                                    :options="
+                                                                        apiData.biaya
+                                                                    "
+                                                                    class="w-full rounded-lg text-xs"
+                                                                />
+                                                                <p
+                                                                    v-if="
+                                                                        !biaya.name_biaya
+                                                                    "
+                                                                    class="text-red-500"
+                                                                >
+                                                                    Nama Biaya
+                                                                    tidak boleh
+                                                                    kosong
+                                                                </p>
+                                                            </div>
+                                                            <div class="pb-2">
+                                                                <label
+                                                                    :for="
+                                                                        'harga' +
+                                                                        customerIndex +
+                                                                        '-' +
+                                                                        index +
+                                                                        '-' +
+                                                                        biayaIndex
+                                                                    "
+                                                                    >Harga Jual
+                                                                    {{
+                                                                        biayaIndex +
+                                                                        1
+                                                                    }}:</label
+                                                                >
+                                                                <input
+                                                                    :disabled="
+                                                                        !(
+                                                                            matchingUser &&
+                                                                            matchingUser.company.includes(
+                                                                                selectedMarker.name_company
+                                                                            )
+                                                                        )
+                                                                    "
+                                                                    :id="
+                                                                        'harga' +
+                                                                        customerIndex +
+                                                                        '-' +
+                                                                        index +
+                                                                        '-' +
+                                                                        biayaIndex
+                                                                    "
+                                                                    v-model="
+                                                                        biaya.harga
+                                                                    "
+                                                                    class="w-full border-gray-950 border-opacity-25 focus:outline-none focus:ring focus:border-blue-300 rounded text-xs"
+                                                                    placeholder="isi Total Harga"
+                                                                    type="number"
+                                                                />
+                                                                <p
+                                                                    v-if="
+                                                                        !biaya.harga
+                                                                    "
+                                                                    class="text-red-500"
+                                                                >
+                                                                    Harga Jual
+                                                                    tidak boleh
+                                                                    kosong
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                                <div class="">
+                                    <label for="notes">Catatan:</label>
+                                    <textarea
+                                        id="notes"
+                                        class="w-full mb-2 p-2 border h-32 md:h-20 focus:outline-none focus:ring focus:border-blue-300 rounded-lg text-sm border-gray-950 border-opacity-25"
+                                        :disabled="
+                                            !(
+                                                matchingUser &&
+                                                matchingUser.company.includes(
+                                                    selectedMarker.name_company
+                                                )
+                                            )
+                                        "
+                                        >{{
+                                            selectedMarker
+                                                ? selectedMarker.notes
+                                                : ""
+                                        }}</textarea
+                                    >
+                                </div>
 
-                            <label for="notes">Catatan:</label>
-                            <textarea
-                                id="notes"
-                                class="w-full mb-2 p-2 border h-32 md:h-16 cursor-not-allowed"
-                                disabled
-                                >{{
-                                    selectedMarker ? selectedMarker.notes : ""
-                                }}</textarea
-                            >
-
-                            <!-- <div class="flex lg:flex-row gap-2 justify-center">
-                                <button
-                                    v-if="
-                                        matchingUser &&
-                                        matchingUser.company.includes(
-                                            selectedMarker.name_company
-                                        )
-                                    "
-                                    type="submit"
-                                    class="bg-blue-500 text-white py-3 px-4 rounded-md w-full"
-                                >
-                                    Save
-                                </button>
-                                <button
-                                    v-if="
-                                        matchingUser &&
-                                        matchingUser.company.includes(
-                                            selectedMarker.name_company
-                                        )
-                                    "
-                                    @click="deleteSaveFormData"
-                                    type="button"
-                                    class="bg-red-500 text-white py-3 px-4 rounded-md w-full"
-                                >
-                                    Delete
-                                </button>
-                            </div> -->
-                            <div class="mt-8">
-                                <h1>
-                                    Dibuat oleh :
-                                    {{ selectedMarker.name }}
-                                </h1>
-                                <h1>
-                                    Perusahaan :
-                                    {{ selectedMarker.name_company }}
-                                </h1>
-                                <span
-                                    >Dibuat pada :
-                                    {{ selectedMarker.date }}</span
-                                >
+                                <div class="mt-8">
+                                    <h1>
+                                        Dibuat oleh :
+                                        {{ selectedMarker.name }}
+                                    </h1>
+                                    <h1>
+                                        Perusahaan :
+                                        {{ selectedMarker.name_company }}
+                                    </h1>
+                                    <span
+                                        >Dibuat pada :
+                                        {{ selectedMarker.date }}</span
+                                    >
+                                </div>
                             </div>
                         </div>
                     </form>

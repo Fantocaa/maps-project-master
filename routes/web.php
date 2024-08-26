@@ -79,8 +79,6 @@ Route::middleware('auth')->group(function () {
     Route::get('maps/index', [MdMapsController::class, 'index'])->name('maps.index');
     Route::post('maps/store', [MdMapsController::class, 'store'])->name('maps.store');
 
-    Route::get('/reverse-geocode', [MdMapsController::class, 'geocode']);
-
     Route::post('/maps/edit/{id}/', [MdMapsController::class, 'update_maps'])->name('update_form_maps');
     Route::delete('/maps/delete/{id}/', [MdMapsController::class, 'delete_maps'])->name('delete_form_maps');
 
@@ -94,6 +92,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/unit', [MdSatuanController::class, 'index'])->name('index.unit');
     Route::get('/biaya_name', [MdBiayaNameController::class, 'index'])->name('index.biaya_name');
     Route::get('/jenis_barang', [MdJenisBarangController::class, 'index'])->name('index.jenisbarang_name');
+
+    Route::get('/reverse-geocode', [MdMapsController::class, 'geocode']);
 });
 
 Route::get('/components/buttons', function () {

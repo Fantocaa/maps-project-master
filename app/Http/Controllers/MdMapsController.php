@@ -154,9 +154,12 @@ class MdMapsController extends Controller
             foreach ($markerData['satuan'] as $satuanData) {
                 // Temukan jenis barang berdasarkan jenis_barang_name di dalam satuan
                 $jenisBarang = md_jenis_barang::firstWhere('jenis_barang_name', $satuanData['jenis_barang_name']);
-                if (!$jenisBarang) {
-                    return response()->json(['error' => 'Jenis Barang not found: ' . $satuanData['jenis_barang_name']], 404);
-                }
+                // if (!$jenisBarang) {
+                //     return response()->json(['error' => 'Jenis Barang not found: ' . $satuanData['jenis_barang_name']], 404);
+                // } else {
+                //     // Tangani kasus di mana jenis_barang_name adalah null
+                //     $jenisBarang = null; // Atau sesuaikan dengan logika aplikasi Anda
+                // }
 
                 $satuan = md_satuan::firstWhere('name_satuan', $satuanData['name_satuan']);
                 if ($satuan) {
@@ -165,7 +168,7 @@ class MdMapsController extends Controller
                         $biaya->id_maps = $form->id; // Mengaitkan id_maps dengan id dari md_maps yang baru saja dibuat
                         $biaya->id_satuan = $satuan->id; // Mengaitkan id_satuan dengan id dari md_satuan yang ditemukan
                         $biaya->id_customer = $customer->id; // Menyimpan id_customer dalam tabel md_biaya
-                        $biaya->id_jenis_barang = $jenisBarang->id; // Menyimpan id_jenis_barang dalam tabel md_biaya
+                        $biaya->id_jenis_barang = $jenisBarang ? $jenisBarang->id : null; // Menyimpan id_jenis_barang jika ada
 
                         // Cari dan kaitkan id dari md_biaya_name berdasarkan name_biaya
                         if (isset($biayaData['name_biaya'])) {
@@ -234,9 +237,9 @@ class MdMapsController extends Controller
                 foreach ($customerData['satuan'] as $satuanData) {
                     // Temukan jenis barang berdasarkan jenis_barang_name di dalam satuan
                     $jenisBarang = md_jenis_barang::firstWhere('jenis_barang_name', $satuanData['jenis_barang_name']);
-                    if (!$jenisBarang) {
-                        return response()->json(['error' => 'Jenis Barang not found: ' . $satuanData['jenis_barang_name']], 404);
-                    }
+                    // if (!$jenisBarang) {
+                    //     return response()->json(['error' => 'Jenis Barang not found: ' . $satuanData['jenis_barang_name']], 404);
+                    // }
 
                     $satuan = md_satuan::firstWhere('name_satuan', $satuanData['name_satuan']);
                     if ($satuan) {
@@ -245,7 +248,7 @@ class MdMapsController extends Controller
                             $biaya->id_maps = $form->id; // Mengaitkan id_maps dengan id dari md_maps yang baru saja dibuat
                             $biaya->id_satuan = $satuan->id; // Mengaitkan id_satuan dengan id dari md_satuan yang ditemukan
                             $biaya->id_customer = $customer->id; // Menyimpan id_customer dalam tabel md_biaya
-                            $biaya->id_jenis_barang = $jenisBarang->id; // Menyimpan id_jenis_barang dalam tabel md_biaya
+                            $biaya->id_jenis_barang = $jenisBarang ? $jenisBarang->id : null; // Menyimpan id_jenis_barang jika ada
 
                             // Cari dan kaitkan id dari md_biaya_name berdasarkan name_biaya
                             if (isset($biayaData['name_biaya'])) {

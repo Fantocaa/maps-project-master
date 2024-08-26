@@ -239,7 +239,7 @@ export default defineComponent({
                         name_customer: customer.name_customer,
                         satuan: customer.satuan.map((satuan) => ({
                             name_satuan: satuan.name_satuan,
-                            jenis_barang_name: satuan.jenis_barang_name,
+                            jenis_barang_name: satuan.jenis_barang_name || null,
                             biaya: satuan.biaya.map((biaya) => ({
                                 name_biaya: biaya.name_biaya,
                                 harga: biaya.harga,
@@ -343,14 +343,6 @@ export default defineComponent({
                 let data = await response.json();
 
                 // Filter data berdasarkan name_company yang sama dengan name_company dari matchingUser
-                // data = data.filter(
-                //     (map) =>
-                //         matchingUser.value.view_company.includes(
-                //             map.name_company
-                //         ) ||
-                //         matchingUser.value.company.includes(map.name_company) ||
-                //         matchingUser.value.company.includes(map.name_customer)
-                // );
 
                 data = data.filter(
                     (map) =>
@@ -396,6 +388,25 @@ export default defineComponent({
                             })),
                         })),
                         showForm: false,
+                    };
+                });
+
+                // Filter tambahan untuk memastikan hanya customer yang relevan yang ditampilkan
+                markers.value = markers.value.map((marker) => {
+                    // Cek apakah pengguna berada di perusahaan yang sama dengan perusahaan pembuat pin
+                    const isUserInCompany = matchingUser.value.company.includes(
+                        marker.name_company
+                    );
+
+                    return {
+                        ...marker,
+                        customers: isUserInCompany
+                            ? marker.customers // Tampilkan semua customers jika pengguna berada di perusahaan yang sama
+                            : marker.customers.filter((customer) =>
+                                  matchingUser.value.company.includes(
+                                      customer.name_customer
+                                  )
+                              ), // Filter customers jika pengguna tidak berada di perusahaan yang sama
                     };
                 });
 
@@ -640,7 +651,7 @@ export default defineComponent({
                         customer.items.forEach((item, itemIndex) => {
                             const itemErrors = {
                                 name_satuan: "",
-                                jenis_barang_name: "",
+                                // jenis_barang_name: "",
                                 biaya: [],
                             };
 
@@ -650,11 +661,11 @@ export default defineComponent({
                                 isValid = false;
                             }
 
-                            if (!item.jenis_barang_name) {
-                                itemErrors.jenis_barang_name =
-                                    "Jenis Barang tidak boleh kosong";
-                                isValid = false;
-                            }
+                            // if (!item.jenis_barang_name) {
+                            //     itemErrors.jenis_barang_name =
+                            //         "Jenis Barang tidak boleh kosong";
+                            //     isValid = false;
+                            // }
 
                             // Validasi biaya dalam array
                             if (Array.isArray(item.biaya)) {
@@ -772,9 +783,6 @@ export default defineComponent({
                             method: "POST",
                             headers: {
                                 "Content-Type": "application/json",
-                                // "X-CSRF-TOKEN": document
-                                //     .querySelector('meta[name="csrf-token"]')
-                                //     .getAttribute("content"),
                                 "X-CSRF-TOKEN": $(
                                     'meta[name="csrf-token"]'
                                 ).attr("content"),
@@ -884,7 +892,7 @@ export default defineComponent({
                                     (satuan, satuanIndex) => {
                                         const satuanErrors = {
                                             name_satuan: "",
-                                            jenis_barang_name: "",
+                                            // jenis_barang_name: "",
                                             biaya: [],
                                         };
 
@@ -894,11 +902,11 @@ export default defineComponent({
                                             isValid = false;
                                         }
 
-                                        if (!satuan.jenis_barang_name) {
-                                            satuanErrors.jenis_barang_name =
-                                                "Jenis Barang name cannot be empty";
-                                            isValid = false;
-                                        }
+                                        // if (!satuan.jenis_barang_name) {
+                                        //     satuanErrors.jenis_barang_name =
+                                        //         "Jenis Barang name cannot be empty";
+                                        //     isValid = false;
+                                        // }
 
                                         if (!Array.isArray(satuan.biaya)) {
                                             satuanErrors.biaya.push(
@@ -961,7 +969,8 @@ export default defineComponent({
                             name_customer: customer.name_customer,
                             satuan: customer.satuan.map((satuan) => ({
                                 name_satuan: satuan.name_satuan,
-                                jenis_barang_name: satuan.jenis_barang_name,
+                                jenis_barang_name:
+                                    satuan.jenis_barang_name || null,
                                 biaya: satuan.biaya.map((biaya) => ({
                                     name_biaya: biaya.name_biaya,
                                     harga: biaya.harga,
@@ -1159,6 +1168,20 @@ export default defineComponent({
             // $("#showmarker").hide();
         });
 
+        const handleClickRefresh = () => {
+            // Panggil kembali fungsi yang diperlukan saat refresh
+            fetchUser();
+            fetchData();
+            fetchAgent();
+            fetchJenisBarang();
+            fetchCustomer();
+            fetchUnit();
+            fetchBiaya();
+            // loadMapPosition();
+            // handleMapIdle();
+            // getCurrentLocation();
+        };
+
         return {
             user,
             zoom,
@@ -1173,6 +1196,7 @@ export default defineComponent({
             address,
             resetForm,
             customerOptions,
+            handleClickRefresh,
             setPlace,
             matchingUser,
             kurangiBiaya,
@@ -1252,7 +1276,7 @@ export default defineComponent({
 
             <div>
                 <div
-                    class="hidden lg:block lg:absolute top-4 md:top-4 w-full px-2 md:px-8"
+                    class="hidden lg:block lg:absolute top-4 md:top-4 px-2 md:px-8"
                 >
                     <div class="relative">
                         <img
@@ -1263,16 +1287,29 @@ export default defineComponent({
                         <GMapAutocomplete
                             placeholder="Cari Lokasi"
                             @place_changed="setPlace"
-                            class="px-4 py-4 md:py-2 2xl:py-4 w-full md:w-[576px] xl:w-[800px] border rounded-full focus:outline-none focus:ring focus:border-blue-300 shadow-xl border-none pl-14 text-lg"
+                            class="md:w-[576px] xl:w-[800px] px-4 py-4 md:py-2 2xl:py-4 border rounded-full focus:outline-none focus:ring focus:border-blue-300 shadow-xl border-none pl-14 text-lg"
                         >
                         </GMapAutocomplete>
                     </div>
                 </div>
 
                 <div
-                    class="pt-6 md:pt-0 absolute right-2 top-0 md:top-6 md:right-8 z-10 flex justify-end md:px-0"
+                    class="pt-6 md:pt-0 absolute right-2 top-0 md:top-6 md:right-8 z-10 flex justify-end md:px-0 gap-4"
                 >
                     <!-- Open the modal using ID.showModal() method -->
+
+                    <button
+                        class="bg-green-600 border-none text-white hover:bg-green-700 text-base pl-10 relative rounded-full btn px-4 shadow-xl py-2"
+                        @click="handleClickRefresh"
+                    >
+                        <img
+                            src="/images/icon/refresh.svg"
+                            alt="User"
+                            class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5"
+                        />
+                        Refresh
+                    </button>
+
                     <button
                         class="bg-red-600 border-none text-white hover:bg-red-700 text-base pl-10 relative rounded-full btn px-4 shadow-xl py-2"
                         onclick="my_modal_2.showModal()"
@@ -1280,7 +1317,7 @@ export default defineComponent({
                         <img
                             src="/images/icon/user.svg"
                             alt="User"
-                            class="absolute left-3 top-1/2 transform -translate-y-1/2"
+                            class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5"
                         />
                         Akun
                     </button>
@@ -1289,10 +1326,6 @@ export default defineComponent({
                             <h1 class="text-xl font-semibold">
                                 Informasi Akun
                             </h1>
-                            <!-- <p>
-                                {{ center.lat }} Latitude,
-                                {{ center.lng }} Longitude
-                            </p> -->
                             <br />
                             <p>
                                 Login Sebagai :

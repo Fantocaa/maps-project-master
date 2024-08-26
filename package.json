@@ -48,7 +48,7 @@
     "tailwind-merge": "^2.3.0",
     "tailwindcss-animate": "^1.0.7",
     "vue-google-maps-community-fork": "^0.3.1",
-    "vue-multiselect": "^2.1.8",
+    "vue-multiselect": "^2.1.9",
     "vue-select": "^4.0.0-beta.6",
     "vue3-google-map": "^0.19.0"
   }

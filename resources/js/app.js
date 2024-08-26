@@ -25,6 +25,7 @@ createInertiaApp({
                 load: {
                     key: "AIzaSyD2dASx5Zo68GSyZuPjUs-4SBLYGsn4OPQ",
                     libraries: "places",
+                    loading: "async",
                 },
             })
             .mount(el);
