@@ -403,7 +403,7 @@ export default defineComponent({
                         customers: isUserInCompany
                             ? marker.customers // Tampilkan semua customers jika pengguna berada di perusahaan yang sama
                             : marker.customers.filter((customer) =>
-                                  matchingUser.value.company.includes(
+                                  matchingUser.value.view_company.includes(
                                       customer.name_customer
                                   )
                               ), // Filter customers jika pengguna tidak berada di perusahaan yang sama
