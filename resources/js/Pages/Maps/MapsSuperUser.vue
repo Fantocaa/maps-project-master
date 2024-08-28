@@ -1905,9 +1905,17 @@ export default defineComponent({
                                                                 index + 1
                                                             }}:</label
                                                         >
+                                                        <!-- :disabled="
+                                                                item.isSaved ||
+                                                                !(
+                                                                    matchingUser &&
+                                                                    matchingUser.company.includes(
+                                                                        selectedMarker.name_company
+                                                                    )
+                                                                )
+                                                            " -->
                                                         <v-select
                                                             :disabled="
-                                                                item.isSaved ||
                                                                 !(
                                                                     matchingUser &&
                                                                     matchingUser.company.includes(

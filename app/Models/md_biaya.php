@@ -8,6 +8,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class md_biaya extends Model
 {
-    use HasFactory;
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
+
+    // Tentukan nama tabel secara eksplisit jika berbeda dari nama model
+    protected $table = 'md_biayas';
+
+    // Relasi ke tabel md_maps
+    public function map()
+    {
+        return $this->belongsTo(md_maps::class, 'id');
+    }
 }

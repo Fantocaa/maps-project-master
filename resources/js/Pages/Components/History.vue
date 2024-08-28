@@ -15,6 +15,8 @@ const fetchData = async () => {
     data.value = response.data;
 };
 
+console.log(data.value);
+
 onMounted(async () => {
     await fetchData();
     dataTable = $("#myTable").DataTable({
@@ -35,9 +37,19 @@ const columns = [
         },
     },
     { data: "date", title: "Date" },
-    { data: "name", title: "Name" },
-    { data: "notes", title: "Notes" },
+    { data: "name_penerima", title: "Nama Penerima" },
     { data: "lokasi", title: "Location" },
+    { data: "name", title: "Name" },
+    {
+        data: null,
+        title: "Actions",
+        // orderable: false,
+        render: function (data, type, row) {
+            return `<a href="/manage/viewmap/${data.id}/edit">
+                <button type="btn" class="btn btn-primary">
+            View</button></a>`;
+        },
+    },
 ];
 </script>
 

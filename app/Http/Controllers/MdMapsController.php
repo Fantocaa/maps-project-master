@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\MapsbyidExport;
+use App\Exports\MapsExport;
 use App\Http\Requests\Storemd_mapsRequest;
 use App\Http\Requests\Updatemd_mapsRequest;
 use App\Models\md_agent;
@@ -15,6 +17,11 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Maatwebsite\Excel\Facades\Excel;
+use Inertia\Response;
+use Inertia\Inertia;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Redirect;
 
 class MdMapsController extends Controller
 {
@@ -193,7 +200,14 @@ class MdMapsController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(md_maps $md_maps) {}
+    public function show(md_maps $md_maps, $request)
+    {
+        // dd($request);
+        $markerId = $request->query('markerId');
+        $marker = md_maps::all($markerId);
+
+        return Inertia::render('Maps/MapsAdmin', ['marker' => $marker,]);
+    }
 
     /**
      * Show the form for editing the specified resource.
@@ -273,34 +287,6 @@ class MdMapsController extends Controller
         $form->save();
 
         return response()->json(['success' => 'Data updated successfully']);
-
-
-        // Tambahkan data satuan dan biaya yang baru
-        // if (!empty($request->satuan)) {
-        //     foreach ($request->satuan as $satuanData) {
-        //         if (isset($satuanData['name_satuan'])) {
-        //             $satuan = md_satuan::firstWhere('name_satuan', $satuanData['name_satuan']);
-        //             if ($satuan && isset($satuanData['biaya']) && is_array($satuanData['biaya'])) {
-        //                 foreach ($satuanData['biaya'] as $biayaData) {
-        //                     if (isset($biayaData['name_biaya'], $biayaData['harga'])) {
-        //                         $biayaNameEntry = md_biaya_name::firstWhere('biaya_name', $biayaData['name_biaya']);
-
-        //                         if ($biayaNameEntry) {
-        //                             // Buat entri baru di md_biaya
-        //                             $biaya = new md_biaya();
-        //                             $biaya->id_maps = $form->id;
-        //                             $biaya->id_satuan = $satuan->id;
-        //                             $biaya->name_biaya = $biayaNameEntry->id;
-        //                             $biaya->harga = $biayaData['harga'];
-        //                             $biaya->harga_modal = $biayaData['harga_modal'];
-        //                             $biaya->save();
-        //                         }
-        //                     }
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
     }
 
 
@@ -364,10 +350,51 @@ class MdMapsController extends Controller
         return response()->json(['address' => null], 404);
     }
 
+    public function export()
+    {
+        return Excel::download(new MapsExport, 'maps.xlsx');
+    }
+
     /**
      * Remove the specified resource from storage.
      */
     public function destroy(md_maps $md_maps)
+    {
+        //
+    }
+
+    // public function edit_viewmap(Request $request, $id): Response
+    public function edit_viewmap($id)
+    {
+        $maps = md_maps::withTrashed()
+            ->join('md_biayas', 'md_maps.id', '=', 'md_biayas.id_maps')
+            ->with(['agent', 'customer', 'perusahaan', 'satuan', 'jenisbarang']) // Muat relasi
+            ->where('md_maps.id', $id)
+            ->select('md_maps.*', 'md_biayas.*')
+            ->get();
+
+        // dd($maps);
+        return Inertia::render('Components/History/Edit', ['mapsData' => $maps]);
+        // return response()->json($maps);
+    }
+
+    public function export_by_id($id)
+    {
+        $mapsData = md_maps::withTrashed()
+            ->join('md_biayas', 'md_maps.id', '=', 'md_biayas.id_maps')
+            ->with(['agent', 'customer', 'perusahaan', 'satuan', 'jenisbarang']) // Muat relasi
+            ->where('md_maps.id', $id)
+            ->select('md_maps.*', 'md_biayas.*')
+            ->get();
+
+        return Excel::download(new MapsbyidExport($mapsData), 'mapshistory.xlsx');
+    }
+
+    public function update_viewmap()
+    {
+        //
+    }
+    public function destroy_viewmap()
     {
         //
     }

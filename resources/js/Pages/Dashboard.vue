@@ -34,18 +34,12 @@ import History from "./Components/History.vue";
                 You're logged in!
             </div>
             <div class="flex gap-4 w-full justify-end">
-                <!-- <Link
-                    href="/maps/user"
-                    class="flex items-center transition-colors font-medium select-none disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-dark-eval-2 px-6 py-2 bg-blue-500 text-white hover:bg-blue-600 focus:ring-blue-500 rounded-md justify-center gap-2"
+                <a
+                    href="/maps/export"
+                    class="flex items-center transition-colors font-medium select-none disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-dark-eval-2 px-5 py-2 bg-green-500 text-white hover:bg-green-600 focus:ring-green-500 rounded-md justify-center gap-2"
                 >
-                    Maps User
-                </Link>
-                <Link
-                    href="/maps/superuser"
-                    class="flex items-center transition-colors font-medium select-none disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-dark-eval-2 px-5 py-2 bg-blue-500 text-white hover:bg-blue-600 focus:ring-blue-500 rounded-md justify-center gap-2"
-                >
-                    Maps Super User
-                </Link> -->
+                    Export History Excel
+                </a>
                 <Link
                     href="/maps/admin"
                     class="flex items-center transition-colors font-medium select-none disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-dark-eval-2 px-5 py-2 bg-blue-500 text-white hover:bg-blue-600 focus:ring-blue-500 rounded-md justify-center gap-2"

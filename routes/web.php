@@ -74,6 +74,10 @@ Route::middleware('auth')->group(function () {
     Route::patch('/manage/jenisbarang/update', [MdJenisBarangController::class, 'update_jenisbarang'])->name('jenisbarang.update');
     Route::delete('/manage/jenisbarang/{id}/delete', [MdJenisBarangController::class, 'destroy_jenisbarang'])->name('jenisbarang.destroy');
 
+    Route::get('/manage/viewmap/{id}/edit', [MdMapsController::class, 'edit_viewmap'])->name('viewmap.edit');
+    Route::patch('/manage/viewmap/update', [MdMapsController::class, 'update_viewmap'])->name('viewmap.update');
+    Route::delete('/manage/viewmap/{id}/delete', [MdMapsController::class, 'destroy_viewmap'])->name('viewmap.destroy');
+
     // Route::resource('maps', MdMapsController::class);
 
     Route::get('maps/index', [MdMapsController::class, 'index'])->name('maps.index');
@@ -94,6 +98,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/jenis_barang', [MdJenisBarangController::class, 'index'])->name('index.jenisbarang_name');
 
     Route::get('/reverse-geocode', [MdMapsController::class, 'geocode']);
+
+    Route::get('/maps/export', [MdMapsController::class, 'export'])->middleware(['role:superadmin']);
+
+    Route::get('/maps/export/{id}', [MdMapsController::class, 'export_by_id'])->middleware(['role:superadmin']);
 });
 
 Route::get('/components/buttons', function () {
@@ -123,11 +131,8 @@ Route::get('/maps/superuser', function () {
 Route::get('/maps/admin', function () {
     return Inertia::render('Maps/MapsAdmin');
 })->middleware(['auth', 'verified', 'role:admin|superadmin'])->name('mapsAdmin');
-// })->middleware(['auth', 'verified', 'role:superuser|admin|superadmin'])->name('mapsAdmin');
 
-// Route::get('/maps/admincopy', function () {
-//     return Inertia::render('Maps/MapsAdmin Copy');
-// })->middleware(['auth', 'verified', 'role:admin|superadmin'])->name('mapsAdmincopy');
-
+// Route::get('/maps/admin', [MdMapsController::class, 'show'])->name('index.mapsAdmin')
+//     ->middleware(['auth', 'verified', 'role:admin|superadmin'])->name('mapsAdmin');
 
 require __DIR__ . '/auth.php';
