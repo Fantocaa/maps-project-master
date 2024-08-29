@@ -352,8 +352,68 @@ class MdMapsController extends Controller
 
     public function export()
     {
-        return Excel::download(new MapsExport, 'maps.xlsx');
+        $maps = md_maps::join('md_agents', 'md_maps.id_agent', '=', 'md_agents.id')
+            ->join('md_companies', 'md_maps.id_perusahaan', '=', 'md_companies.id')
+            ->select(
+                'md_maps.*',
+                'md_agents.name_agent as name_agent',
+                'md_companies.name_company as name_company'
+            )
+            ->get();
+
+        foreach ($maps as $map) {
+            // Temukan semua pelanggan yang terkait dengan map
+            $customers = md_company::join('md_biayas', 'md_biayas.id_customer', '=', 'md_companies.id')
+                ->whereNull('md_biayas.deleted_at') // Filter untuk tidak termasuk data yang soft deleted
+                ->where('md_biayas.id_maps', $map->id)
+                ->select('md_companies.id as customer_id', 'md_companies.name_company as name_customer')
+                ->distinct()
+                ->get();
+
+            $map->customers = $customers->map(function ($customer) use ($map) {
+                // Temukan semua satuan yang terkait dengan pelanggan dan map ini
+                $satuans = md_satuan::whereHas('biaya', function ($query) use ($map, $customer) {
+                    $query->where('id_maps', $map->id)
+                        ->where('id_customer', $customer->customer_id);
+                })->get();
+
+                return [
+                    'name_customer' => $customer->name_customer,
+                    'satuan' => $satuans->map(function ($satuan) use ($map, $customer) {
+                        $jenis_barang = md_biaya::where('id_maps', $map->id)
+                            ->where('id_customer', $customer->customer_id)
+                            ->where('id_satuan', $satuan->id)
+                            ->join('md_jenis_barangs', 'md_biayas.id_jenis_barang', '=', 'md_jenis_barangs.id')
+                            ->select('md_jenis_barangs.jenis_barang_name as jenis_barang_name')
+                            ->first();
+
+                        $biayas = md_biaya::where('id_maps', $map->id)
+                            ->where('id_customer', $customer->customer_id)
+                            ->where('id_satuan', $satuan->id)
+                            ->join('md_biaya_names', 'md_biayas.name_biaya', '=', 'md_biaya_names.id')
+                            ->select('md_biayas.*', 'md_biaya_names.biaya_name as biaya_name')
+                            ->get();
+
+                        return [
+                            'name_satuan' => $satuan->name_satuan,
+                            'jenis_barang_name' => $jenis_barang ? $jenis_barang->jenis_barang_name : null,
+                            'biaya' => $biayas->map(function ($biaya) {
+                                return [
+                                    'name_biaya' => $biaya->biaya_name,
+                                    'harga' => $biaya->harga,
+                                    'harga_modal' => $biaya->harga_modal,
+                                ];
+                            }),
+                        ];
+                    }),
+                ];
+            });
+        }
+
+        return Excel::download(new MapsExport($maps), 'maps.xlsx');
+        // return response()->json($maps);
     }
+
 
     /**
      * Remove the specified resource from storage.
@@ -378,17 +438,17 @@ class MdMapsController extends Controller
         // return response()->json($maps);
     }
 
-    public function export_by_id($id)
-    {
-        $mapsData = md_maps::withTrashed()
-            ->join('md_biayas', 'md_maps.id', '=', 'md_biayas.id_maps')
-            ->with(['agent', 'customer', 'perusahaan', 'satuan', 'jenisbarang']) // Muat relasi
-            ->where('md_maps.id', $id)
-            ->select('md_maps.*', 'md_biayas.*')
-            ->get();
+    // public function export_by_id($id)
+    // {
+    //     $mapsData = md_maps::withTrashed()
+    //         ->join('md_biayas', 'md_maps.id', '=', 'md_biayas.id_maps')
+    //         ->with(['agent', 'customer', 'perusahaan', 'satuan', 'jenisbarang']) // Muat relasi
+    //         ->where('md_maps.id', $id)
+    //         ->select('md_maps.*', 'md_biayas.*')
+    //         ->get();
 
-        return Excel::download(new MapsbyidExport($mapsData), 'mapshistory.xlsx');
-    }
+    //     return Excel::download(new MapsbyidExport($mapsData), 'mapshistory.xlsx');
+    // }
 
     public function update_viewmap()
     {

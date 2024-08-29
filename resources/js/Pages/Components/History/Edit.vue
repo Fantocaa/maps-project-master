@@ -89,14 +89,13 @@ const groupedData = groupByDateTimeAndCustomerAndJenis(mapsData);
                 >
                     View Marker History
                 </h2>
-                <a :href="`/maps/export/${mapsData[0].id}`">
+                <!-- <a :href="`/maps/export/${mapsData[0].id}`">
                     <Button
                         class="items-center gap-2 max-w-xs bg-green-500 hover:bg-green-600"
                     >
-                        <!-- <GithubIcon aria-hidden="true" :class="iconSizeClasses" /> -->
                         <span>Export Excel</span>
                     </Button>
-                </a>
+                </a> -->
             </div>
         </template>
 

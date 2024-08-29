@@ -101,7 +101,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/maps/export', [MdMapsController::class, 'export'])->middleware(['role:superadmin']);
 
-    Route::get('/maps/export/{id}', [MdMapsController::class, 'export_by_id'])->middleware(['role:superadmin']);
+    // Route::get('/maps/export/{id}', [MdMapsController::class, 'export_by_id'])->middleware(['role:superadmin']);
 });
 
 Route::get('/components/buttons', function () {
