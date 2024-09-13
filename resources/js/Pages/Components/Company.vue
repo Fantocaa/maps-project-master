@@ -147,6 +147,16 @@ const columnsCompany = [
     },
     { data: "name_company", title: "Name" },
     {
+        data: "agents", // Menampilkan nama agen
+        title: "Agents",
+        render: function (data, type, row) {
+            if (data && data.length > 0) {
+                return data.map((agent) => agent.name_agent).join(", ");
+            }
+            return "No agents"; // Jika tidak ada agen
+        },
+    },
+    {
         data: null,
         title: "Actions",
         render: function (data, type, row) {
@@ -393,7 +403,9 @@ const columnsJenisBarang = [
         </template>
         <template #default>
             <div class="grid grid-cols-2 gap-6 mb-16">
-                <div class="border-dark-eval-2 border p-4 rounded-xl">
+                <div
+                    class="border-dark-eval-2 border p-4 rounded-xl col-span-2 w-full"
+                >
                     <div class="flex justify-between mb-8 items-center">
                         <h1 class="font-semibold text-xl">
                             Company & Customer List
@@ -408,7 +420,7 @@ const columnsJenisBarang = [
                     <DataTable
                         :data="companyData"
                         :columns="columnsCompany"
-                        class="table table-hover table-striped w-1/2"
+                        class="table table-hover table-striped"
                     />
                 </div>
 

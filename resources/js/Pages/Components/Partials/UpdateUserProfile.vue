@@ -5,7 +5,7 @@ import Label from "@/Components/Label.vue";
 import Button from "@/Components/Button.vue";
 import Input from "@/Components/Input.vue";
 import { Link, useForm, usePage } from "@inertiajs/vue3";
-import { ref, onMounted, watch } from "vue";
+import { ref, onMounted } from "vue";
 import Multiselect from "@vueform/multiselect";
 import "@vueform/multiselect/themes/default.css";
 import vSelect from "vue-select";
@@ -95,7 +95,7 @@ onMounted(() => {
                 <InputError class="mt-2" :message="form.errors.email" />
             </div>
 
-            <div
+            <!-- <div
                 v-if="props.mustVerifyEmail && user.email_verified_at === null"
             >
                 <p class="text-sm mt-2 text-gray-800 dark:text-gray-200">
@@ -116,7 +116,7 @@ onMounted(() => {
                 >
                     A new verification link has been sent to your email address.
                 </div>
-            </div>
+            </div> -->
 
             <div>
                 <Label for="role" value="Role" />

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\md_company;
 use App\Http\Requests\Storemd_companyRequest;
 use App\Http\Requests\Updatemd_companyRequest;
+use App\Models\md_agent;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Http\Request;
@@ -19,8 +20,8 @@ class MdCompanyController extends Controller
      */
     public function index()
     {
-        $maps = md_company::all();
-        return response()->json($maps);
+        $companies = md_company::with('agents:id,name_agent')->get(['id', 'name_company']);
+        return response()->json($companies);
     }
 
     /**
@@ -31,16 +32,18 @@ class MdCompanyController extends Controller
         //
     }
 
+
+
     public function edit_company(Request $request, $id): Response
     {
 
-        $id = md_company::find($id);
-        // $name_company = $id->name_company;
+        $company = md_company::with('agents')->find($id);
+        $agents = md_agent::all(); // Mendapatkan semua agent yang tersedia
 
         return Inertia::render('Components/Company/EditCompany', [
-            'data' => $id,
-            // 'name_company' => $name_company,
-            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
+            'data' => $company,
+            'agents' => $agents, // Kirim semua agents untuk pilihan
+            // 'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => session('status'),
         ]);
     }
@@ -79,21 +82,41 @@ class MdCompanyController extends Controller
      */
     public function update_company(Updatemd_companyRequest $request): RedirectResponse
     {
+        // dd($request);
+        // Cari data company berdasarkan ID
         $company = md_company::find($request->id);
 
+        // Validasi input name dan agent
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'agent' => ['required', 'array'], // Pastikan agent adalah array
         ]);
 
+        // Jika company ditemukan
         if ($company) {
-            $company->name_company = $request->name; // Change this line
+            // Update name_company
+            $company->name_company = $request->name;
             $company->save();
+
+            // Ambil ID agent dari array agent
+            // $agentIds = array_map(function ($agent) {
+            //     return $agent['id']; // Ambil hanya id dari masing-masing agent
+            // }, $request->agent);
+
+            // Mengambil ID agent langsung dari array
+            $agentIds = $request->agent; // ID agen sudah ada dalam array
+
+            // Sync agents ke tabel pivot (pivot_company_agents) menggunakan array agent_id
+            $company->agents()->sync($agentIds);
+
+            // Redirect ke halaman manage.company dengan pesan sukses
+            return Redirect::route('manage.company')->with('status', 'Company updated successfully.');
         } else {
+            // Jika company tidak ditemukan, return error 404
             return response()->json(['error' => 'Data not found'], 404);
         }
-
-        return Redirect::route('manage.company');
     }
+
 
     /**
      * Remove the specified resource from storage.

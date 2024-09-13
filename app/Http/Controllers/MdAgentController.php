@@ -30,7 +30,7 @@ class MdAgentController extends Controller
     {
         //
     }
-    
+
     public function edit_agent(Request $request, $id): Response
     {
         $id = md_agent::find($id);
@@ -82,7 +82,7 @@ class MdAgentController extends Controller
         ]);
 
         if ($agent) {
-            $agent->name_agent = $request->name; // Change this line
+            $agent->name_agent = $request->name;
             $agent->save();
         } else {
             return response()->json(['error' => 'Data not found'], 404);

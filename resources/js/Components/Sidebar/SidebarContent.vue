@@ -44,14 +44,14 @@ import { TemplateIcon } from "@heroicons/vue/outline";
             />
             <SidebarCollapsibleItem
                 :href="route('manage.company')"
-                title="Manage Company"
+                title="Manage Master Data"
                 :active="route().current('manage.company')"
             />
-            <SidebarCollapsibleItem
+            <!-- <SidebarCollapsibleItem
                 :href="route('manage.agent')"
                 title="Manage Agent"
                 :active="route().current('manage.agent')"
-            />
+            /> -->
         </SidebarCollapsible>
 
         <!-- Examples -->

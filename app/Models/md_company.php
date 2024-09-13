@@ -30,4 +30,9 @@ class md_company extends Model
     {
         return $this->belongsToMany(viewCustomer::class, 'view_customers');
     }
+
+    public function agents()
+    {
+        return $this->belongsToMany(md_agent::class, 'pivot_company_agents', 'company_id', 'agent_id');
+    }
 }

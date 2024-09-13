@@ -3,7 +3,7 @@ import AuthenticatedLayout from "@/Layouts/Authenticated.vue";
 import { Link } from "@inertiajs/vue3";
 import DataTable from "datatables.net-vue3";
 import DataTablesCore from "datatables.net";
-import $ from "jquery";
+// import $ from "jquery";
 import axios from "axios";
 import { ref, onMounted } from "vue";
 import Button from "@/Components/Button.vue";
@@ -18,6 +18,7 @@ let data = ref([]);
 const fetchData = async () => {
     const response = await axios.get("/role");
     data.value = response.data;
+    // console.log(response.data);
 };
 
 onMounted(async () => {

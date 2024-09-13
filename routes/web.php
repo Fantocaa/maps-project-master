@@ -116,9 +116,9 @@ Route::get('/manage/company', function () {
     return Inertia::render('Components/Company');
 })->middleware(['auth', 'verified'])->name('manage.company');
 
-Route::get('/manage/agent', function () {
-    return Inertia::render('Components/Agent');
-})->middleware(['auth', 'verified'])->name('manage.agent');
+// Route::get('/manage/agent', function () {
+//     return Inertia::render('Components/Agent');
+// })->middleware(['auth', 'verified'])->name('manage.agent');
 
 //Maps Route
 
