@@ -63,7 +63,7 @@ class UserController extends Controller
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255'],
-            'role' => ['required', Rule::in(['user', 'superuser', 'admin', 'superadmin'])],
+            'role' => ['required', Rule::in(['user', 'superuser', 'superuser2', 'admin', 'superadmin'])],
             'company_id' => ['required', 'array'],
             'company_id.id' => ['exists:md_companies,id'],
             'id_view_name_company' => ['required', 'array'],

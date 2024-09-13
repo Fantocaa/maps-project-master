@@ -133,6 +133,7 @@ onMounted(() => {
                 >
                     <option value="user">User</option>
                     <option value="superuser">Super User</option>
+                    <option value="superuser2">Super User 2</option>
                     <option value="admin">Admin</option>
                     <option value="superadmin">Super Admin</option>
                 </select>

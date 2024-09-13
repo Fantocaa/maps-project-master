@@ -27,10 +27,9 @@ class RedirectIfAuthenticated
                 if ($request->path() == 'register' && $user->hasRole('superadmin')) {
                     return $next($request);
                 }
-
                 if ($user->hasRole('admin')) {
                     return redirect('/maps/admin');
-                } else if ($user->hasRole('superuser')) {
+                } else if ($user->hasAnyRole(['superuser', 'superuser2'])) {
                     return redirect('/maps/superuser');
                 } else if ($user->hasRole('user')) {
                     return redirect('/maps/user');

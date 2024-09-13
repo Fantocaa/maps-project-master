@@ -7,9 +7,9 @@ import $ from "jquery";
 import axios from "axios";
 import { ref, onMounted } from "vue";
 import Button from "@/Components/Button.vue";
-// import { GithubIcon } from "@/Components/Icons/brands";
 import "datatables.net-select";
 import "datatables.net-responsive";
+// import { GithubIcon } from "@/Components/Icons/brands";
 
 DataTable.use(DataTablesCore);
 

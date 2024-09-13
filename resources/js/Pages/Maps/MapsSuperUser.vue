@@ -9,6 +9,7 @@ import axios from "axios";
 import vSelect from "vue-select";
 import "vue-select/dist/vue-select.css";
 import { reactive } from "vue";
+import MapHistory from "./History/MapHistory.vue";
 
 export default defineComponent({
     data() {
@@ -1959,9 +1960,17 @@ export default defineComponent({
                                                                 index + 1
                                                             }}:</label
                                                         >
+                                                        <!-- :disabled="
+                                                                item.isSaved ||
+                                                                !(
+                                                                    matchingUser &&
+                                                                    matchingUser.company.includes(
+                                                                        selectedMarker.name_company
+                                                                    )
+                                                                )
+                                                            " -->
                                                         <v-select
                                                             :disabled="
-                                                                item.isSaved ||
                                                                 !(
                                                                     matchingUser &&
                                                                     matchingUser.company.includes(

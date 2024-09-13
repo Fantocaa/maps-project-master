@@ -41,11 +41,11 @@ class MdMapsSeeder extends Seeder
         ]);
         $superuser->assignRole('superuser');
 
-        $user = User::create([
-            'name' => 'user',
-            'email' => 'user@tako.co.id',
+        $superuser2 = User::create([
+            'name' => 'superuser2',
+            'email' => 'superuser2@tako.co.id',
             'password' => bcrypt('12341234'),
         ]);
-        $user->assignRole('user');
+        $superuser2->assignRole('superuser2');
     }
 }

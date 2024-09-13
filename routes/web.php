@@ -116,6 +116,10 @@ Route::get('/manage/company', function () {
     return Inertia::render('Components/Company');
 })->middleware(['auth', 'verified'])->name('manage.company');
 
+Route::get('/manage/agent', function () {
+    return Inertia::render('Components/Agent');
+})->middleware(['auth', 'verified'])->name('manage.agent');
+
 //Maps Route
 
 Route::get('/maps', function () {})->middleware('auth.redirect');
@@ -126,7 +130,7 @@ Route::get('/maps/user', function () {
 
 Route::get('/maps/superuser', function () {
     return Inertia::render('Maps/MapsSuperUser');
-})->middleware(['auth', 'verified', 'role:superuser|superadmin'])->name('mapsSuperUser');
+})->middleware(['auth', 'verified', 'role:superuser|superuser2|superadmin'])->name('mapsSuperUser');
 
 Route::get('/maps/admin', function () {
     return Inertia::render('Maps/MapsAdmin');

@@ -22,6 +22,7 @@ class RolePermissionSeeder extends Seeder
         Role::create(['name' => 'superadmin']);
         Role::create(['name' => 'admin']);
         Role::create(['name' => 'superuser']);
+        Role::create(['name' => 'superuser2']);
         Role::create(['name' => 'user']);
 
         $roleSuperAdmin = Role::findByName('superadmin');
@@ -31,6 +32,11 @@ class RolePermissionSeeder extends Seeder
         $roleAdmin->givePermissionTo(Permission::all());
 
         $roleSuperUser = Role::findByName('superuser');
+        $roleSuperUser->givePermissionTo('create pin');
+        $roleSuperUser->givePermissionTo('edit pin');
+        $roleSuperUser->givePermissionTo('see pin');
+
+        $roleSuperUser = Role::findByName('superuser2');
         $roleSuperUser->givePermissionTo('create pin');
         $roleSuperUser->givePermissionTo('edit pin');
         $roleSuperUser->givePermissionTo('see pin');
