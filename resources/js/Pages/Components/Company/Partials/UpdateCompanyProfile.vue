@@ -1,27 +1,37 @@
 <script setup>
-import axios from "axios";
+import { ref, computed } from "vue";
+import { useForm, usePage } from "@inertiajs/vue3";
+import vSelect from "vue-select";
+import "vue-select/dist/vue-select.css";
 import InputError from "@/Components/InputError.vue";
 import Label from "@/Components/Label.vue";
 import Button from "@/Components/Button.vue";
 import Input from "@/Components/Input.vue";
-import { Link, useForm, usePage } from "@inertiajs/vue3";
-import { ref, onMounted } from "vue";
-import "@vueform/multiselect/themes/default.css";
-import vSelect from "vue-select";
-import "vue-select/dist/vue-select.css";
 
 const { props } = usePage();
 
-let form = useForm({
-    id: ref(props.data.id),
-    name: ref(props.data.name_company),
+const form = useForm({
+    id: props.data.id,
+    name: props.data.name_company,
     agent: props.data.agents.map((agent) => agent.id),
-    // agent: ref(props.data.agents.map((agent) => agent.name_agent)),
 });
 
-const agents = props.agents; // Semua agent untuk pilihan
+const agents = computed(() => props.agents);
 
-// console.log(agents);
+const allAgents = computed(() => props.agents.map((agent) => agent.id));
+
+const isSelectAllChecked = computed({
+    get() {
+        return form.agent.length === allAgents.value.length;
+    },
+    set(value) {
+        if (value) {
+            form.agent = allAgents.value;
+        } else {
+            form.agent = [];
+        }
+    },
+});
 </script>
 
 <template>
@@ -58,24 +68,9 @@ const agents = props.agents; // Semua agent untuk pilihan
                 <InputError class="mt-2" :message="form.errors.name" />
             </div>
 
-            <!-- <div>
-                <Label for="agent" value="Agent List" />
-                <vSelect
-                    id="agent"
-                    v-model="form.agent"
-                    :options="agents"
-                    label="name_agent"
-                    multiple
-                    track-by="id"
-                    placeholder="Select agents"
-                    class="border-gray-400 rounded-md focus:border-gray-400 focus:ring focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white dark:border-gray-600 dark:bg-dark-eval-1 dark:text-gray-300 dark:focus:ring-offset-dark-eval-1 w-full bg-dark-eval-0"
-                />
-                <InputError class="mt-2" :message="form.errors.agent" />
-            </div> -->
-
             <div>
                 <Label for="agent" value="Agent List" />
-                <vSelect
+                <!-- <vSelect
                     id="agent"
                     v-model="form.agent"
                     :options="agents"
@@ -85,7 +80,34 @@ const agents = props.agents; // Semua agent untuk pilihan
                     placeholder="Select agents"
                     class="border-gray-400 rounded-md focus:border-gray-400 focus:ring focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white dark:border-gray-600 dark:bg-dark-eval-1 dark:text-gray-300 dark:focus:ring-offset-dark-eval-1 w-full bg-dark-eval-0"
                     :reduce="(agent) => agent.id"
-                />
+                    @input="handleSelectChange"
+                /> -->
+
+                <div class="flex items-center mt-2 mb-2">
+                    <input
+                        type="checkbox"
+                        :checked="isSelectAllChecked"
+                        @change="isSelectAllChecked = $event.target.checked"
+                        class="mr-2 cursor-pointer"
+                    />
+                    <label>Select All</label>
+                </div>
+
+                <div class="space-y-2">
+                    <div
+                        v-for="agent in agents"
+                        :key="agent.id"
+                        class="flex items-center"
+                    >
+                        <input
+                            type="checkbox"
+                            :value="agent.id"
+                            v-model="form.agent"
+                            class="mr-2 cursor-pointer"
+                        />
+                        <label>{{ agent.name_agent }}</label>
+                    </div>
+                </div>
                 <InputError class="mt-2" :message="form.errors.agent" />
             </div>
 

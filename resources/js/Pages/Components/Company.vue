@@ -254,7 +254,7 @@ const columnsJenisBarang = [
 </style>
 
 <template>
-    <AuthenticatedLayout title="Manage Company">
+    <AuthenticatedLayout title="Manage Master Data">
         <template #header>
             <div
                 class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-4"

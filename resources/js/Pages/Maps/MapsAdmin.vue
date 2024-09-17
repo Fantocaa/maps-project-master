@@ -1,7 +1,7 @@
 <script>
 import { defineComponent, ref, onMounted } from "vue";
 import { Marker } from "vue3-google-map";
-import $ from "jquery";
+// import $ from "jquery";
 import { Head } from "@inertiajs/vue3";
 import { router } from "@inertiajs/vue3";
 import { Link } from "@inertiajs/vue3";
@@ -38,7 +38,7 @@ export default defineComponent({
     },
     props: { auth: Object },
     setup(props) {
-        const center = ref({ lat: 0, lng: 0 });
+        const center = ref({ lat: -7.250445, lng: 112.768845 });
         const markers = ref([]);
         const klikmarker = ref([]);
         const selectedMarker = ref(false);
@@ -1234,7 +1234,7 @@ export default defineComponent({
 </script>
 
 <template>
-    <Head title="Maps" />
+    <Head title="Maps Admin" />
     <div class="mx-auto relative h-full">
         <div
             class="lg:hidden top-4 md:top-4 w-full px-4 md:px-8 pt-6 lg:pt-0 text-sm"

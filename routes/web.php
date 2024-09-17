@@ -106,15 +106,15 @@ Route::middleware('auth')->group(function () {
 
 Route::get('/components/buttons', function () {
     return Inertia::render('Components/Buttons');
-})->middleware(['auth', 'verified'])->name('components.buttons');
+})->middleware(['auth', 'verified', 'role:superadmin'])->name('components.buttons');
 
 Route::get('/manage/user', function () {
     return Inertia::render('Components/Register');
-})->middleware(['auth', 'verified'])->name('manage.user');
+})->middleware(['auth', 'verified', 'role:superadmin'])->name('manage.user');
 
-Route::get('/manage/company', function () {
+Route::get('/manage/masterdata', function () {
     return Inertia::render('Components/Company');
-})->middleware(['auth', 'verified'])->name('manage.company');
+})->middleware(['auth', 'verified', 'role:superadmin'])->name('manage.masterdata');
 
 // Route::get('/manage/agent', function () {
 //     return Inertia::render('Components/Agent');

@@ -39,7 +39,7 @@ export default defineComponent({
     },
     props: { auth: Object },
     setup(props) {
-        const center = ref({ lat: 0, lng: 0 });
+        const center = ref({ lat: -7.250445, lng: 112.768845 });
         const markers = ref([]);
         const klikmarker = ref([]);
         const selectedMarker = ref(false);
@@ -324,9 +324,10 @@ export default defineComponent({
                     matchingUser.value = foundUser;
                     // console.log("User ditemukan:", matchingUser.value);
                     fetchData();
+                    fetchAgent();
                 } else {
                     // User tidak ditemukan, lakukan sesuatu yang lain
-                    // console.log("User tidak ditemukan");
+                    console.error("User tidak ditemukan");
                 }
             } catch (error) {
                 console.error("Error fetching data:", error);
@@ -422,11 +423,69 @@ export default defineComponent({
             // }
         };
 
+        // const fetchAgent = async () => {
+        //     try {
+        //         const response = await axios.get("/agent");
+        //         const data = response.data;
+        //         agent.value = data.map((agent) => agent.name_agent);
+        //     } catch (error) {
+        //         console.error("Error fetching data:", error);
+        //     }
+        // };
+
         const fetchAgent = async () => {
             try {
-                const response = await axios.get("/agent");
-                const data = response.data;
-                agent.value = data.map((agent) => agent.name_agent);
+                // Ensure matchingUser.value is properly set
+                if (!matchingUser.value) {
+                    console.error("matchingUser is not defined");
+                    return;
+                }
+
+                // Check if matchingUser is superuser
+                if (
+                    matchingUser.value.roles[0] === "superuser" ||
+                    matchingUser.value.roles[0] === "superadmin"
+                ) {
+                    const response = await fetch("/company");
+                    let data = await response.json();
+
+                    // Ensure matchingUser.value.company is properly set
+                    if (!matchingUser.value.company) {
+                        // console.error("matchingUser.company is not defined");
+                        return;
+                    }
+
+                    // Filter companies where name_company matches matchingUser.value.company
+                    const filteredCompanies = data.filter((company) =>
+                        matchingUser.value.company.includes(
+                            company.name_company
+                        )
+                    );
+
+                    // Extract the agents from the matching companies
+                    agent.value = filteredCompanies.flatMap((company) =>
+                        company.agents.map((agent) => agent.name_agent)
+                    );
+                } else if (matchingUser.value.roles[0] === "superuser2") {
+                    const response = await axios.get("/agent");
+                    const data = response.data;
+
+                    // Check if any of the companies in matchingUser match the name_agent
+                    const matchingAgent = data.find((agent) =>
+                        matchingUser.value.company.includes(agent.name_agent)
+                    );
+
+                    if (matchingAgent) {
+                        // Set the matching agent as the selected value in v-select
+                        formInput.value[0].name_agent =
+                            matchingAgent.name_agent;
+                    } else {
+                        // If no matching agent is found, just populate the v-select
+                        formInput.value[0].name_agent = null; // Or any default value
+                    }
+                } else {
+                    console.error("Unknown role for matchingUser");
+                }
             } catch (error) {
                 console.error("Error fetching data:", error);
             }
@@ -623,7 +682,16 @@ export default defineComponent({
                 let isValid = true;
 
                 // Validasi input utama
-                if (!formInput.value.name_agent) {
+                // if (!formInput.value.name_agent) {
+                //     validationErrors.value.name_agent =
+                //         "Nama Agent tidak boleh kosong";
+                //     isValid = false;
+                // }
+
+                if (
+                    !formInput.value.name_agent &&
+                    (!formInput.value[0] || !formInput.value[0].name_agent)
+                ) {
                     validationErrors.value.name_agent =
                         "Nama Agent tidak boleh kosong";
                     isValid = false;
@@ -726,7 +794,9 @@ export default defineComponent({
                         name_company: matchingUser.value
                             ? matchingUser.value.company.join(", ")
                             : "Loading...",
-                        name_agent: formInput.value.name_agent,
+                        name_agent:
+                            formInput.value.name_agent ||
+                            formInput.value[0].name_agent,
                     };
 
                     // Format formData
@@ -1155,7 +1225,7 @@ export default defineComponent({
 
         onMounted(async () => {
             // fetchData();
-            fetchAgent();
+            // fetchAgent();
             fetchCustomer();
             fetchUser();
             fetchUnit();
@@ -1237,7 +1307,7 @@ export default defineComponent({
 </script>
 
 <template>
-    <Head title="Maps" />
+    <Head title="Maps Superuser" />
     <div class="mx-auto relative h-full">
         <div class="hidden lg:block lg:absolute top-4 md:top-4 px-2 md:px-8">
             <div class="relative">
@@ -1404,24 +1474,88 @@ export default defineComponent({
                         </h1>
                         <div class="overflow-y-scroll max-h-96 pr-4">
                             <div class="pb-2">
-                                <div class="w-full pb-2 px-2">
-                                    <label for="name_agent" class="pb-2"
-                                        >Nama Agent:</label
+                                <div class="w-full pb-4 px-2">
+                                    <div>
+                                        <div>
+                                            <div
+                                                v-if="
+                                                    matchingUser &&
+                                                    (matchingUser.roles[0] ===
+                                                        'superuser' ||
+                                                        matchingUser
+                                                            .roles[0] ===
+                                                            'superadmin')
+                                                "
+                                            >
+                                                <label for="name_agent"
+                                                    >Nama Agent:</label
+                                                >
+                                                <v-select
+                                                    id="name_agent"
+                                                    :options="agent"
+                                                    v-model="
+                                                        formInput.name_agent
+                                                    "
+                                                    class="w-full"
+                                                />
+                                            </div>
+
+                                            <div
+                                                v-if="
+                                                    matchingUser &&
+                                                    matchingUser.roles[0] ===
+                                                        'superuser2'
+                                                "
+                                            >
+                                                <label for="name_agent"
+                                                    >Nama Agent:</label
+                                                >
+                                                <v-select
+                                                    id="name_agent"
+                                                    :options="agent"
+                                                    disabled
+                                                    v-model="
+                                                        formInput[0].name_agent
+                                                    "
+                                                    class="w-full"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div
+                                        v-if="
+                                            matchingUser &&
+                                            (matchingUser.roles[0] ===
+                                                'superuser' ||
+                                                matchingUser.roles[0] ===
+                                                    'superadmin')
+                                        "
                                     >
-                                    <v-select
-                                        id="name_agent"
-                                        :options="agent"
-                                        v-model="formInput.name_agent"
-                                        class="w-full"
-                                    />
-                                    <p
-                                        v-if="!formInput.name_agent"
-                                        class="text-red-500"
+                                        <p
+                                            v-if="!formInput.name_agent"
+                                            class="text-red-500"
+                                        >
+                                            Agent tidak boleh kosong
+                                        </p>
+                                    </div>
+
+                                    <div
+                                        v-if="
+                                            matchingUser &&
+                                            matchingUser.roles[0] ===
+                                                'superuser2'
+                                        "
                                     >
-                                        Agent tidak boleh kosong
-                                    </p>
+                                        <p
+                                            v-if="!formInput[0].name_agent"
+                                            class="text-red-500"
+                                        >
+                                            Agent tidak boleh kosong
+                                        </p>
+                                    </div>
                                 </div>
-                                <div class="pb-4 px-2">
+                                <div class="px-2">
                                     <label for="name_penerima" class="pb-2"
                                         >Nama Penerima:</label
                                     >

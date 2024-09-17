@@ -42,6 +42,8 @@ class AuthenticatedSessionController extends Controller
             return redirect()->to('/maps/admin');
         } else if (Auth::user()->hasRole('superuser')) {
             return redirect()->to('/maps/superuser');
+        } else if (Auth::user()->hasRole('superuser2')) {
+            return redirect()->to('/maps/superuser');
         } else if (Auth::user()->hasRole('user')) {
             return redirect()->to('/maps/user');
         } else {

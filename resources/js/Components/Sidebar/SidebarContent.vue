@@ -43,9 +43,9 @@ import { TemplateIcon } from "@heroicons/vue/outline";
                 :active="route().current('manage.user')"
             />
             <SidebarCollapsibleItem
-                :href="route('manage.company')"
+                :href="route('manage.masterdata')"
                 title="Manage Master Data"
-                :active="route().current('manage.company')"
+                :active="route().current('manage.masterdata')"
             />
             <!-- <SidebarCollapsibleItem
                 :href="route('manage.agent')"

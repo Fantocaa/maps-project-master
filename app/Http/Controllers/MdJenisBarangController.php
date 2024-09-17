@@ -41,7 +41,7 @@ class MdJenisBarangController extends Controller
         $company->save();
 
         // return Inertia::render('Components/Company');
-        return Redirect::route('manage.company');
+        return Redirect::route('manage.masterdata');
     }
 
     /**
@@ -84,7 +84,7 @@ class MdJenisBarangController extends Controller
             return response()->json(['error' => 'Data not found'], 404);
         }
 
-        return Redirect::route('manage.company');
+        return Redirect::route('manage.masterdata');
     }
 
     /**
@@ -100,6 +100,7 @@ class MdJenisBarangController extends Controller
 
         $user->delete();
 
-        return Redirect::to('/manage/company');
+        // return Redirect::to('/manage/company');
+        return Redirect::route('manage.masterdata');
     }
 }

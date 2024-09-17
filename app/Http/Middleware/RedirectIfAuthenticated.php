@@ -29,7 +29,9 @@ class RedirectIfAuthenticated
                 }
                 if ($user->hasRole('admin')) {
                     return redirect('/maps/admin');
-                } else if ($user->hasAnyRole(['superuser', 'superuser2'])) {
+                } else if ($user->hasRole('superuser')) {
+                    return redirect('/maps/superuser');
+                } else if ($user->hasRole('superuser2')) {
                     return redirect('/maps/superuser');
                 } else if ($user->hasRole('user')) {
                     return redirect('/maps/user');

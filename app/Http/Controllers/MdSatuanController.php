@@ -52,7 +52,7 @@ class MdSatuanController extends Controller
         $company->save();
 
         // return Inertia::render('Components/Company');
-        return Redirect::route('manage.company');
+        return Redirect::route('manage.masterdata');
     }
 
     public function update_unit(Updatemd_satuanRequest $request): RedirectResponse
@@ -70,7 +70,7 @@ class MdSatuanController extends Controller
             return response()->json(['error' => 'Data not found'], 404);
         }
 
-        return Redirect::route('manage.company');
+        return Redirect::route('manage.masterdata');
     }
 
     /**

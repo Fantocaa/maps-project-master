@@ -32,8 +32,6 @@ class MdCompanyController extends Controller
         //
     }
 
-
-
     public function edit_company(Request $request, $id): Response
     {
 
@@ -58,7 +56,7 @@ class MdCompanyController extends Controller
         $company->save();
 
         // return Inertia::render('Components/Company');
-        return Redirect::route('manage.company');
+        return Redirect::route('manage.masterdata');
     }
 
     /**
@@ -110,13 +108,12 @@ class MdCompanyController extends Controller
             $company->agents()->sync($agentIds);
 
             // Redirect ke halaman manage.company dengan pesan sukses
-            return Redirect::route('manage.company')->with('status', 'Company updated successfully.');
+            return Redirect::route('manage.masterdata')->with('status', 'Company updated successfully.');
         } else {
             // Jika company tidak ditemukan, return error 404
             return response()->json(['error' => 'Data not found'], 404);
         }
     }
-
 
     /**
      * Remove the specified resource from storage.
@@ -128,9 +125,6 @@ class MdCompanyController extends Controller
 
     public function destroy_company($id): RedirectResponse
     {
-        // $request->validate([
-        //     'password' => ['required', 'current_password'],
-        // ]);
 
         $user = md_company::find($id);
 
