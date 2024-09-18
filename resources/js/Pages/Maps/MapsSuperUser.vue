@@ -1468,6 +1468,9 @@ export default defineComponent({
                 <div
                     class="bg-white w-96 md:w-[1024px] lg:w-[512px] xl:w-[660px] h-auto rounded-xl p-6 relative shadow-xl mx-4 md:mx-24"
                 >
+                    <div>
+                        <MapHistory />
+                    </div>
                     <form @submit.prevent="saveFormData">
                         <h1 class="pb-4 w-[90%] px-2">
                             Alamat : {{ address }}

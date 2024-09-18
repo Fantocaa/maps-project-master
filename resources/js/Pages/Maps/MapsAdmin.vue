@@ -9,6 +9,7 @@ import axios from "axios";
 import vSelect from "vue-select";
 import "vue-select/dist/vue-select.css";
 import { reactive } from "vue";
+import MapHistory from "./History/MapHistory.vue";
 
 export default defineComponent({
     data() {
@@ -35,6 +36,7 @@ export default defineComponent({
         Head,
         Link,
         vSelect,
+        MapHistory,
     },
     props: { auth: Object },
     setup(props) {
@@ -52,6 +54,7 @@ export default defineComponent({
         const jenis_barang = ref([]);
         const matchingUser = ref(null);
         const customerOptions = reactive([]);
+        const showHistory = ref(false);
 
         const getCurrentLocation = () => {
             if (markers.value.length > 0) {
@@ -205,7 +208,81 @@ export default defineComponent({
             }
         };
 
-        const handleMarkerClick = (clickedMarker) => {
+        // const handleMarkerClick = (clickedMarker) => {
+        //     // Temukan indeks marker yang sesuai
+        //     const index = markers.value.findIndex(
+        //         (marker) =>
+        //             marker.position.lat === clickedMarker.position.lat &&
+        //             marker.position.lng === clickedMarker.position.lng
+        //     );
+
+        //     if (index === -1) {
+        //         console.error("Marker not found");
+        //         return;
+        //     }
+
+        //     const clickedMarkerData = markers.value[index];
+
+        //     if (!clickedMarkerData.id) {
+        //         // Marker tidak memiliki ID, hapus langsung
+        //         markers.value.splice(index, 1);
+        //     } else {
+        //         // Struktur data terbaru dengan multiple customers
+        //         selectedMarker.value = {
+        //             id: clickedMarkerData.id,
+        //             notes: clickedMarker.notes,
+        //             name: clickedMarker.name,
+        //             date: clickedMarker.date,
+        //             lokasi: clickedMarker.lokasi,
+        //             name_company: clickedMarker.name_company,
+        //             name_penerima: clickedMarker.name_penerima,
+        //             name_agent: clickedMarker.name_agent,
+        //             // name_customer: clickedMarker.name_customer,
+        //             customers: clickedMarker.customers.map((customer) => ({
+        //                 name_customer: customer.name_customer,
+        //                 satuan: customer.satuan.map((satuan) => ({
+        //                     name_satuan: satuan.name_satuan,
+        //                     jenis_barang_name: satuan.jenis_barang_name || null,
+        //                     biaya: satuan.biaya.map((biaya) => ({
+        //                         name_biaya: biaya.name_biaya,
+        //                         harga: biaya.harga,
+        //                         harga_modal: biaya.harga_modal,
+        //                         isSaved: true, // Menandakan bahwa data ini sudah disimpan di database
+        //                     })),
+        //                     isSaved: true, // Menandakan bahwa data ini sudah disimpan di database
+        //                 })),
+        //                 isSaved: true, // Menandakan bahwa data ini sudah disimpan di database
+        //             })),
+        //             showForm: true,
+        //         };
+
+        //         $("#showmarker").show();
+        //     }
+
+        //     // console.log(selectedMarker.value);
+
+        //     // Update zoom dan center
+        //     center.value = clickedMarker.position;
+
+        //     if (mapInstance.value) {
+        //         mapInstance.value.setZoom(zoom.value);
+        //         mapInstance.value.setCenter(center.value);
+        //     }
+
+        //     // Panggil getReverseGeocoding dengan posisi marker yang diklik
+        //     getReverseGeocoding(
+        //         clickedMarker.position.lat,
+        //         clickedMarker.position.lng
+        //     )
+        //         .then((addr) => {
+        //             if (addr) {
+        //                 address.value = addr; // Update address dengan alamat yang diterima
+        //             }
+        //         })
+        //         .catch((error) => console.error(error));
+        // };
+
+        const handleMarkerClick = async (clickedMarker) => {
             // Temukan indeks marker yang sesuai
             const index = markers.value.findIndex(
                 (marker) =>
@@ -225,38 +302,50 @@ export default defineComponent({
                 markers.value.splice(index, 1);
             } else {
                 // Struktur data terbaru dengan multiple customers
-                selectedMarker.value = {
-                    id: clickedMarkerData.id,
-                    notes: clickedMarker.notes,
-                    name: clickedMarker.name,
-                    date: clickedMarker.date,
-                    lokasi: clickedMarker.lokasi,
-                    name_company: clickedMarker.name_company,
-                    name_penerima: clickedMarker.name_penerima,
-                    name_agent: clickedMarker.name_agent,
-                    // name_customer: clickedMarker.name_customer,
-                    customers: clickedMarker.customers.map((customer) => ({
-                        name_customer: customer.name_customer,
-                        satuan: customer.satuan.map((satuan) => ({
-                            name_satuan: satuan.name_satuan,
-                            jenis_barang_name: satuan.jenis_barang_name || null,
-                            biaya: satuan.biaya.map((biaya) => ({
-                                name_biaya: biaya.name_biaya,
-                                harga: biaya.harga,
-                                harga_modal: biaya.harga_modal,
-                                isSaved: true, // Menandakan bahwa data ini sudah disimpan di database
+                try {
+                    const response = await fetch(
+                        `/history/${clickedMarkerData.id}`
+                    );
+                    const data = await response.json();
+
+                    // Log the fetched history data
+                    console.log("Fetched history data:", data);
+
+                    selectedMarker.value = {
+                        id: clickedMarkerData.id,
+                        notes: clickedMarker.notes,
+                        name: clickedMarker.name,
+                        date: clickedMarker.date,
+                        lokasi: clickedMarker.lokasi,
+                        name_company: clickedMarker.name_company,
+                        name_penerima: clickedMarker.name_penerima,
+                        name_agent: clickedMarker.name_agent,
+                        // name_customer: clickedMarker.name_customer,
+                        customers: clickedMarker.customers.map((customer) => ({
+                            name_customer: customer.name_customer,
+                            satuan: customer.satuan.map((satuan) => ({
+                                name_satuan: satuan.name_satuan,
+                                jenis_barang_name:
+                                    satuan.jenis_barang_name || null,
+                                biaya: satuan.biaya.map((biaya) => ({
+                                    name_biaya: biaya.name_biaya,
+                                    harga: biaya.harga,
+                                    harga_modal: biaya.harga_modal,
+                                    isSaved: true,
+                                })),
+                                isSaved: true,
                             })),
-                            isSaved: true, // Menandakan bahwa data ini sudah disimpan di database
+                            isSaved: true,
                         })),
-                        isSaved: true, // Menandakan bahwa data ini sudah disimpan di database
-                    })),
-                    showForm: true,
-                };
+                        history: data,
+                        showForm: true,
+                    };
 
-                $("#showmarker").show();
+                    $("#showmarker").show();
+                } catch (error) {
+                    console.error("Failed to fetch history data:", error);
+                }
             }
-
-            // console.log(selectedMarker.value);
 
             // Update zoom dan center
             center.value = clickedMarker.position;
@@ -1141,6 +1230,8 @@ export default defineComponent({
                 }
             }
             $("#showmarker").hide();
+
+            showHistory.value = false;
         };
 
         const closeModal = () => {
@@ -1148,6 +1239,10 @@ export default defineComponent({
             if (dialog) {
                 dialog.close();
             }
+        };
+
+        const handleBack = () => {
+            showHistory.value = false; // Set showHistory to false when the back button is clicked
         };
 
         onMounted(async () => {
@@ -1186,6 +1281,8 @@ export default defineComponent({
             user,
             zoom,
             agent,
+            handleBack,
+            showHistory,
             validationErrors,
             center,
             satuan,
@@ -1391,12 +1488,11 @@ export default defineComponent({
                 class="absolute z-10 inset-0 flex items-center justify-center 2xl:pl-[40%] text-xs pt-[86px] md:pt-24 lg:pt-8"
             >
                 <div
-                    class="bg-white w-96 md:w-[1024px] lg:w-[512px] xl:w-[660px] h-auto rounded-xl p-6 relative shadow-xl mx-4 md:mx-24"
+                    class="bg-white w-96 md:w-[1024px] lg:w-[512px] xl:w-[720px] h-auto rounded-xl p-6 relative shadow-xl mx-4 md:mx-24"
                 >
+                    <h1 class="pb-4 w-[90%] px-2">Alamat : {{ address }}</h1>
+
                     <form @submit.prevent="saveFormData">
-                        <h1 class="pb-4 w-[90%] px-2">
-                            Alamat : {{ address }}
-                        </h1>
                         <div class="overflow-y-scroll max-h-96 pr-4">
                             <div class="pb-2">
                                 <div class="w-full pb-2 px-2">
@@ -1760,7 +1856,7 @@ export default defineComponent({
                         <div class="flex gap-4 justify-center pt-4">
                             <button
                                 type="submit"
-                                class="bg-blue-500 text-white py-2 px-4 rounded-md w-full"
+                                class="bg-blue-500 text-white py-3 px-4 rounded-md w-full"
                             >
                                 Save
                             </button>
@@ -1799,11 +1895,11 @@ export default defineComponent({
                         ? selectedMarker.value.satuan
                         : ''
                 "
-                class="absolute z-10 inset-0 flex items-center justify-center 2xl:pl-[40%] text-xs pt-[86px] md:pt-24 lg:pt-0"
+                class="absolute z-10 inset-0 flex items-center justify-center 2xl:pl-[40%] text-xs pt-[86px] md:pt-24 lg:pt-8 2xl:pt-0"
                 style="display: none"
             >
                 <div
-                    class="bg-white w-full lg:w-[512px] xl:w-[660px] max-h-[1024px] rounded-xl p-6 relative shadow-xl mx-4 md:mx-24"
+                    class="bg-white w-full lg:w-[512px] xl:w-[720px] lg:h-[80%] 2xl:h-auto max-h-[1024px] rounded-xl p-6 relative shadow-xl mx-4 md:mx-24 2xl:ml-48"
                 >
                     <form @submit.prevent="editSaveFormData">
                         <!-- <div class="overflow-y-scroll max-h-[448px]"> -->
@@ -1811,17 +1907,25 @@ export default defineComponent({
                             Alamat :
                             {{ selectedMarker.lokasi }}
                         </h1>
+                        <h1 class="pb-4 w-[90%] px-2">
+                            Nama Penerima :
+                            {{ selectedMarker.name_penerima }}
+                        </h1>
+                        <h1 class="pb-4 w-[90%] px-2">
+                            Nama Agent :
+                            {{ selectedMarker.name_agent }}
+                        </h1>
+                        <div class="px-2 h-auto" v-if="showHistory">
+                            <MapHistory
+                                :show-history="showHistory"
+                                @back="handleBack"
+                                :history-data="selectedMarker.history"
+                            />
+                        </div>
                         <div
-                            class="max-h-[448px] xl:max-h-[384px] 2xl:max-h-[448px] overflow-auto"
+                            class="max-h-[448px] xl:max-h-[332px] 2xl:max-h-[448px] overflow-auto"
+                            v-else
                         >
-                            <h1 class="pb-4 w-[90%] px-2">
-                                Nama Penerima :
-                                {{ selectedMarker.name_penerima }}
-                            </h1>
-                            <h1 class="pb-4 w-[90%] px-2">
-                                Nama Agent :
-                                {{ selectedMarker.name_agent }}
-                            </h1>
                             <!-- <h1 class="pb-4 w-[90%]">
                                 Nama Customer :
                                 {{ selectedMarker.name_customer }}
@@ -2347,7 +2451,7 @@ export default defineComponent({
                                         </div>
                                     </div>
                                 </div>
-                                <div class="">
+                                <div>
                                     <label for="notes">Catatan:</label>
                                     <textarea
                                         id="notes"
@@ -2395,6 +2499,14 @@ export default defineComponent({
                                         class="bg-red-500 text-white py-3 px-4 rounded-md w-full"
                                     >
                                         Delete
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        class="bg-violet-500 text-white py-3 px-4 rounded-md w-full"
+                                        @click="showHistory = !showHistory"
+                                    >
+                                        History
                                     </button>
                                 </div>
                                 <div class="mt-8">

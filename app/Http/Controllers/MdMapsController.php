@@ -458,4 +458,16 @@ class MdMapsController extends Controller
     {
         //
     }
+
+    public function history($id)
+    {
+        $maps = md_maps::withTrashed()
+            ->join('md_biayas', 'md_maps.id', '=', 'md_biayas.id_maps')
+            ->with(['customer', 'satuan', 'jenisbarang']) // Muat relasi
+            ->where('md_maps.id', $id)
+            ->select('md_maps.*', 'md_biayas.*')
+            ->get();
+
+        return response()->json($maps);
+    }
 }
