@@ -43,12 +43,64 @@ const getFirstEntry = (data) => {
     return {};
 };
 
+// const groupByExactDateTimeAndCustomerAndJenis = (data) => {
+//     const sortedData = data.sort(
+//         (a, b) => new Date(b.created_at) - new Date(a.created_at)
+//     );
+
+//     // Get the first entry as the baseline
+//     const firstEntry = getFirstEntry(sortedData);
+
+//     return sortedData.reduce((acc, curr) => {
+//         const formattedDateTime = formatDateTime(curr.created_at);
+//         const customer = curr.customer?.name_company || "Unknown Customer";
+//         const jenisBarang =
+//             curr.jenisbarang?.jenis_barang_name || "Unknown Jenis Barang";
+//         const dateKey = formattedDateTime;
+
+//         if (!acc[dateKey]) {
+//             acc[dateKey] = {
+//                 date: dateKey,
+//                 items: [],
+//             };
+//         }
+
+//         // Determine if the current item is new or updated
+//         const isUpdated =
+//             curr.customer?.name_company !== firstEntry.customer ||
+//             curr.jenisbarang?.jenis_barang_name !== firstEntry.jenisBarang ||
+//             curr.satuan?.name_satuan !== firstEntry.satuan ||
+//             curr.harga !== firstEntry.harga ||
+//             curr.harga_modal !== firstEntry.harga_modal;
+
+//         acc[dateKey].items.push({
+//             customer,
+//             jenisBarang,
+//             satuan: curr.satuan?.name_satuan || "Tidak ada Satuan",
+//             harga: curr.harga || "Tidak ada Harga",
+//             harga_modal: curr.harga_modal || "Tidak ada Harga Modal",
+//             isUpdated,
+//         });
+
+//         return acc;
+//     }, {});
+// };
+
+// // Compute the grouped data using the historyData prop
+// const groupedData = computed(() =>
+//     groupByExactDateTimeAndCustomerAndJenis(props.historyData)
+// );
+
 const groupByExactDateTimeAndCustomerAndJenis = (data) => {
+    if (!data || !Array.isArray(data)) {
+        // Jika data tidak ada atau bukan array, kembalikan array kosong
+        return {};
+    }
+
     const sortedData = data.sort(
         (a, b) => new Date(b.created_at) - new Date(a.created_at)
     );
 
-    // Get the first entry as the baseline
     const firstEntry = getFirstEntry(sortedData);
 
     return sortedData.reduce((acc, curr) => {
@@ -65,7 +117,6 @@ const groupByExactDateTimeAndCustomerAndJenis = (data) => {
             };
         }
 
-        // Determine if the current item is new or updated
         const isUpdated =
             curr.customer?.name_company !== firstEntry.customer ||
             curr.jenisbarang?.jenis_barang_name !== firstEntry.jenisBarang ||
@@ -86,10 +137,14 @@ const groupByExactDateTimeAndCustomerAndJenis = (data) => {
     }, {});
 };
 
-// Compute the grouped data using the historyData prop
-const groupedData = computed(() =>
-    groupByExactDateTimeAndCustomerAndJenis(props.historyData)
-);
+const groupedData = computed(() => {
+    // Pastikan props.historyData tidak undefined atau null
+    if (!props.historyData || !Array.isArray(props.historyData)) {
+        return {}; // Kembalikan objek kosong jika tidak ada data
+    }
+
+    return groupByExactDateTimeAndCustomerAndJenis(props.historyData);
+});
 </script>
 
 <template>

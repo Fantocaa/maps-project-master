@@ -55,6 +55,7 @@ export default defineComponent({
         const matchingUser = ref(null);
         const customerOptions = reactive([]);
         const showHistory = ref(false);
+        const markerHistory = ref([]); // Tempat untuk menyimpan history
 
         const getCurrentLocation = () => {
             if (markers.value.length > 0) {
@@ -323,10 +324,10 @@ export default defineComponent({
             } else {
                 // Struktur data terbaru dengan multiple customers
                 try {
-                    const response = await fetch(
-                        `/history/${clickedMarkerData.id}`
-                    );
-                    const data = await response.json();
+                    // const response = await fetch(
+                    //     `/history/${clickedMarkerData.id}`
+                    // );
+                    // const data = await response.json();
 
                     // Log the fetched history data
                     // console.log("Fetched history data:", data);
@@ -357,7 +358,7 @@ export default defineComponent({
                             })),
                             isSaved: true,
                         })),
-                        history: data,
+                        // history: data,
                         showForm: true,
                     };
 
@@ -365,6 +366,31 @@ export default defineComponent({
                 } catch (error) {
                     console.error("Failed to fetch history data:", error);
                 }
+            }
+        };
+
+        const toggleHistory = async () => {
+            if (!showHistory.value) {
+                // Jika showHistory sebelumnya false, maka fetch data history
+                await fetchHistory();
+            }
+            showHistory.value = !showHistory.value;
+        };
+
+        // Fungsi untuk fetch data history
+        const fetchHistory = async () => {
+            try {
+                if (selectedMarker.value) {
+                    const response = await fetch(
+                        `/history/${selectedMarker.value.id}`
+                    );
+                    const data = await response.json();
+                    markerHistory.value = data; // Simpan data history ke markerHistory
+
+                    console.log(data);
+                }
+            } catch (error) {
+                console.error("Failed to fetch history data:", error);
             }
         };
 
@@ -1283,6 +1309,8 @@ export default defineComponent({
             agent,
             handleBack,
             showHistory,
+            toggleHistory,
+            markerHistory,
             validationErrors,
             center,
             satuan,
@@ -1856,7 +1884,7 @@ export default defineComponent({
                         <div class="flex gap-4 justify-center pt-4">
                             <button
                                 type="submit"
-                                class="bg-blue-500 text-white py-3 px-4 rounded-md w-full"
+                                class="bg-blue-500 hover:bg-blue-700 text-white py-3 px-4 rounded-md w-full"
                             >
                                 Save
                             </button>
@@ -1919,7 +1947,7 @@ export default defineComponent({
                             <MapHistory
                                 :show-history="showHistory"
                                 @back="handleBack"
-                                :history-data="selectedMarker.history"
+                                :history-data="markerHistory"
                             />
                         </div>
                         <div
@@ -2483,7 +2511,7 @@ export default defineComponent({
                                             )
                                         "
                                         type="submit"
-                                        class="bg-blue-500 text-white py-3 px-4 rounded-md w-full"
+                                        class="bg-blue-500 hover:bg-blue-700 text-white py-3 px-4 rounded-md w-full"
                                     >
                                         Save
                                     </button>
@@ -2496,15 +2524,15 @@ export default defineComponent({
                                         "
                                         @click="deleteSaveFormData"
                                         type="button"
-                                        class="bg-red-500 text-white py-3 px-4 rounded-md w-full"
+                                        class="bg-red-500 hover:bg-red-700 text-white py-3 px-4 rounded-md w-full"
                                     >
                                         Delete
                                     </button>
 
                                     <button
                                         type="button"
-                                        class="bg-violet-500 text-white py-3 px-4 rounded-md w-full"
-                                        @click="showHistory = !showHistory"
+                                        class="bg-violet-500 hover:bg-violet-700 text-white py-3 px-4 rounded-md w-full"
+                                        @click="toggleHistory"
                                     >
                                         History
                                     </button>
