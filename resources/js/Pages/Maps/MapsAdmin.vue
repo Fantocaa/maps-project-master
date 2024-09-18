@@ -295,6 +295,26 @@ export default defineComponent({
                 return;
             }
 
+            // Update zoom dan center
+            center.value = clickedMarker.position;
+
+            if (mapInstance.value) {
+                mapInstance.value.setZoom(zoom.value);
+                mapInstance.value.setCenter(center.value);
+            }
+
+            // Panggil getReverseGeocoding dengan posisi marker yang diklik
+            getReverseGeocoding(
+                clickedMarker.position.lat,
+                clickedMarker.position.lng
+            )
+                .then((addr) => {
+                    if (addr) {
+                        address.value = addr; // Update address dengan alamat yang diterima
+                    }
+                })
+                .catch((error) => console.error(error));
+
             const clickedMarkerData = markers.value[index];
 
             if (!clickedMarkerData.id) {
@@ -309,7 +329,7 @@ export default defineComponent({
                     const data = await response.json();
 
                     // Log the fetched history data
-                    console.log("Fetched history data:", data);
+                    // console.log("Fetched history data:", data);
 
                     selectedMarker.value = {
                         id: clickedMarkerData.id,
@@ -346,26 +366,6 @@ export default defineComponent({
                     console.error("Failed to fetch history data:", error);
                 }
             }
-
-            // Update zoom dan center
-            center.value = clickedMarker.position;
-
-            if (mapInstance.value) {
-                mapInstance.value.setZoom(zoom.value);
-                mapInstance.value.setCenter(center.value);
-            }
-
-            // Panggil getReverseGeocoding dengan posisi marker yang diklik
-            getReverseGeocoding(
-                clickedMarker.position.lat,
-                clickedMarker.position.lng
-            )
-                .then((addr) => {
-                    if (addr) {
-                        address.value = addr; // Update address dengan alamat yang diterima
-                    }
-                })
-                .catch((error) => console.error(error));
         };
 
         const defineSelectedMarkerValueSatuan = (satuan) => {
@@ -1488,7 +1488,7 @@ export default defineComponent({
                 class="absolute z-10 inset-0 flex items-center justify-center 2xl:pl-[40%] text-xs pt-[86px] md:pt-24 lg:pt-8"
             >
                 <div
-                    class="bg-white w-96 md:w-[1024px] lg:w-[512px] xl:w-[720px] h-auto rounded-xl p-6 relative shadow-xl mx-4 md:mx-24"
+                    class="bg-white w-96 md:w-[1024px] lg:w-[512px] xl:w-[800px] 2xl:w-[720px] h-auto rounded-xl p-6 relative shadow-xl mx-4 md:mx-24"
                 >
                     <h1 class="pb-4 w-[90%] px-2">Alamat : {{ address }}</h1>
 
@@ -1899,7 +1899,7 @@ export default defineComponent({
                 style="display: none"
             >
                 <div
-                    class="bg-white w-full lg:w-[512px] xl:w-[720px] lg:h-[80%] 2xl:h-auto max-h-[1024px] rounded-xl p-6 relative shadow-xl mx-4 md:mx-24 2xl:ml-48"
+                    class="bg-white w-full lg:w-[512px] xl:w-[800px] 2xl:w-[720px] lg:h-[80%] 2xl:h-auto max-h-[1024px] rounded-xl p-6 relative shadow-xl mx-4 md:mx-24 2xl:ml-48"
                 >
                     <form @submit.prevent="editSaveFormData">
                         <!-- <div class="overflow-y-scroll max-h-[448px]"> -->
@@ -2508,6 +2508,7 @@ export default defineComponent({
                                     >
                                         History
                                     </button>
+                                    <!-- @click="showHistory = !showHistory" -->
                                 </div>
                                 <div class="mt-8">
                                     <h1>

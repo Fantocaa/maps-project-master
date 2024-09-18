@@ -27,56 +27,36 @@ const formatDateTime = (dateString) => {
     });
 };
 
-// const groupByExactDateTimeCustomerAndJenis = (data) => {
-//     // Sort the data in descending order by created_at
-//     const sortedData = data.sort(
-//         (a, b) => new Date(b.created_at) - new Date(a.created_at)
-//     );
-
-//     return sortedData.reduce((acc, curr) => {
-//         const formattedDateTime = formatDateTime(curr.created_at);
-//         const customer = curr.customer?.name_company || "Unknown Customer";
-//         const jenisBarang =
-//             curr.jenisbarang?.jenis_barang_name || "Unknown Jenis Barang";
-//         const key = ${formattedDateTime}-${customer}-${jenisBarang};
-
-//         if (!acc[key]) {
-//             acc[key] = {
-//                 date: formattedDateTime,
-//                 customer,
-//                 jenisBarang,
-//                 items: [],
-//             };
-//         }
-
-//         // Add the item to the group's items array
-//         acc[key].items.push({
-//             id: curr.id,
-//             satuan: curr.satuan?.name_satuan || "Tidak ada Satuan",
-//             harga: curr.harga || "Tidak ada Harga",
-//             harga_modal: curr.harga_modal || "Tidak ada Harga Modal",
-//         });
-
-//         return acc;
-//     }, {});
-
-// Function to group data by exact datetime and then by customer and jenis barang
+const getFirstEntry = (data) => {
+    if (data.length > 0) {
+        const firstEntry = data[0];
+        return {
+            customer: firstEntry.customer?.name_company || "Unknown Customer",
+            jenisBarang:
+                firstEntry.jenisbarang?.jenis_barang_name ||
+                "Unknown Jenis Barang",
+            satuan: firstEntry.satuan?.name_satuan || "Tidak ada Satuan",
+            harga: firstEntry.harga || "Tidak ada Harga",
+            harga_modal: firstEntry.harga_modal || "Tidak ada Harga Modal",
+        };
+    }
+    return {};
+};
 
 const groupByExactDateTimeAndCustomerAndJenis = (data) => {
-    // Sort the data in descending order by created_at
     const sortedData = data.sort(
         (a, b) => new Date(b.created_at) - new Date(a.created_at)
     );
+
+    // Get the first entry as the baseline
+    const firstEntry = getFirstEntry(sortedData);
 
     return sortedData.reduce((acc, curr) => {
         const formattedDateTime = formatDateTime(curr.created_at);
         const customer = curr.customer?.name_company || "Unknown Customer";
         const jenisBarang =
             curr.jenisbarang?.jenis_barang_name || "Unknown Jenis Barang";
-        const dateKey = formattedDateTime; // Use exact datetime as key
-
-        // Create a key combining datetime and customer
-        const key = `${dateKey}-${customer}-${jenisBarang}`;
+        const dateKey = formattedDateTime;
 
         if (!acc[dateKey]) {
             acc[dateKey] = {
@@ -85,13 +65,21 @@ const groupByExactDateTimeAndCustomerAndJenis = (data) => {
             };
         }
 
-        // Add or update item in the group
+        // Determine if the current item is new or updated
+        const isUpdated =
+            curr.customer?.name_company !== firstEntry.customer ||
+            curr.jenisbarang?.jenis_barang_name !== firstEntry.jenisBarang ||
+            curr.satuan?.name_satuan !== firstEntry.satuan ||
+            curr.harga !== firstEntry.harga ||
+            curr.harga_modal !== firstEntry.harga_modal;
+
         acc[dateKey].items.push({
             customer,
             jenisBarang,
             satuan: curr.satuan?.name_satuan || "Tidak ada Satuan",
             harga: curr.harga || "Tidak ada Harga",
             harga_modal: curr.harga_modal || "Tidak ada Harga Modal",
+            isUpdated,
         });
 
         return acc;
@@ -106,14 +94,14 @@ const groupedData = computed(() =>
 
 <template>
     <section>
-        <div class="overflow-y-scroll max-h-72">
+        <div class="overflow-y-scroll xl:max-h-72 2xl:max-h-[392px]">
             <!-- Display grouped history data here -->
             <div v-if="Object.keys(groupedData).length">
                 <!-- Iterate over each group -->
                 <div
                     v-for="(group, dateKey) in groupedData"
                     :key="dateKey"
-                    class="border rounded-2xl mb-4"
+                    class="border rounded-2xl mb-4 mr-2"
                 >
                     <h3
                         class="text-base bg-blue-500 p-4 text-white rounded-t-xl"
@@ -136,7 +124,7 @@ const groupedData = computed(() =>
                                     <input
                                         id="customer"
                                         :value="item.customer"
-                                        class="cursor-not-allowed w-full border-gray-950 border-opacity-25 focus:outline-none focus:ring focus:border-blue-300 rounded text-xs"
+                                        class="bg-gray-50 cursor-not-allowed w-full border-gray-950 border-opacity-25 focus:outline-none focus:ring focus:border-blue-300 rounded text-xs"
                                         disabled
                                     />
                                 </div>
@@ -148,7 +136,7 @@ const groupedData = computed(() =>
                                         id="jenis"
                                         type="text"
                                         :value="item.jenisBarang"
-                                        class="cursor-not-allowed w-full border-gray-950 border-opacity-25 focus:outline-none focus:ring focus:border-blue-300 rounded text-xs"
+                                        class="bg-gray-50 cursor-not-allowed w-full border-gray-950 border-opacity-25 focus:outline-none focus:ring focus:border-blue-300 rounded text-xs"
                                         disabled
                                     />
                                 </div>
@@ -161,7 +149,7 @@ const groupedData = computed(() =>
                                     <input
                                         id="satuan"
                                         :value="item.satuan"
-                                        class="cursor-not-allowed w-full border-gray-950 border-opacity-25 focus:outline-none focus:ring focus:border-blue-300 rounded text-xs"
+                                        class="bg-gray-50 cursor-not-allowed w-full border-gray-950 border-opacity-25 focus:outline-none focus:ring focus:border-blue-300 rounded text-xs"
                                         disabled
                                     />
                                 </div>
@@ -173,7 +161,7 @@ const groupedData = computed(() =>
                                         id="harga"
                                         type="text"
                                         :value="item.harga"
-                                        class="cursor-not-allowed w-full border-gray-950 border-opacity-25 focus:outline-none focus:ring focus:border-blue-300 rounded text-xs"
+                                        class="bg-gray-50 cursor-not-allowed w-full border-gray-950 border-opacity-25 focus:outline-none focus:ring focus:border-blue-300 rounded text-xs"
                                         disabled
                                     />
                                 </div>
@@ -185,7 +173,7 @@ const groupedData = computed(() =>
                                         id="harga_modal"
                                         type="text"
                                         :value="item.harga_modal"
-                                        class="cursor-not-allowed w-full border-gray-950 border-opacity-25 focus:outline-none focus:ring focus:border-blue-300 rounded text-xs"
+                                        class="bg-gray-50 cursor-not-allowed w-full border-gray-950 border-opacity-25 focus:outline-none focus:ring focus:border-blue-300 rounded text-xs"
                                         disabled
                                     />
                                 </div>
