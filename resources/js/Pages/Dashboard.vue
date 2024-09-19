@@ -1,7 +1,7 @@
 <script setup>
 import AuthenticatedLayout from "@/Layouts/Authenticated.vue";
-import Button from "@/Components/Button.vue";
-import { GithubIcon } from "@/Components/Icons/brands";
+// import Button from "@/Components/Button.vue";
+// import { GithubIcon } from "@/Components/Icons/brands";
 import { Link } from "@inertiajs/vue3";
 import History from "./Components/History.vue";
 </script>

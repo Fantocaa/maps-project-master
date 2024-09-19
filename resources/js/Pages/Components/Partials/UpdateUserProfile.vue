@@ -4,9 +4,8 @@ import InputError from "@/Components/InputError.vue";
 import Label from "@/Components/Label.vue";
 import Button from "@/Components/Button.vue";
 import Input from "@/Components/Input.vue";
-import { Link, useForm, usePage } from "@inertiajs/vue3";
+import { useForm, usePage } from "@inertiajs/vue3";
 import { ref, onMounted } from "vue";
-import Multiselect from "@vueform/multiselect";
 import "@vueform/multiselect/themes/default.css";
 import vSelect from "vue-select";
 import "vue-select/dist/vue-select.css";
@@ -26,7 +25,7 @@ let form = useForm({
     role: ref(props.user.roles[0].name),
     company_id: ref(props.user.companies),
     // id_view_company: ref(props.user.companies[0].pivot.id_view_name_company),
-    // view_company_name: ref(companies ? companies.name_company : null), // Jika perusahaan ditemukan, gunakan name_company. Jika tidak, gunakan null.
+    // view_company_name: ref(companies ? companies.name_company : null),
     id_view_name_company: ref(
         props.user.view_companies.map((vc) => vc.company.name_company)
     ),
@@ -54,7 +53,6 @@ onMounted(() => {
             </p>
         </header>
 
-        <!-- @submit.prevent="form.patch(route('user.update'))" -->
         <form
             @submit.prevent="
                 form.patch(route('user.update', { id: props.user.id }), {

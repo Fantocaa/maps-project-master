@@ -1,6 +1,5 @@
 <script setup>
 import AuthenticatedLayout from "@/Layouts/Authenticated.vue";
-import { Link } from "@inertiajs/vue3";
 import DataTable from "datatables.net-vue3";
 import DataTablesCore from "datatables.net";
 // import $ from "jquery";
