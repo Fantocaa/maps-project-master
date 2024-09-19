@@ -5,6 +5,7 @@ import { defineProps, defineEmits, computed } from "vue";
 const props = defineProps({
     showHistory: Boolean,
     historyData: Array,
+    matchingUser: Object,
 });
 
 const emit = defineEmits(["back"]);
@@ -42,54 +43,6 @@ const getFirstEntry = (data) => {
     }
     return {};
 };
-
-// const groupByExactDateTimeAndCustomerAndJenis = (data) => {
-//     const sortedData = data.sort(
-//         (a, b) => new Date(b.created_at) - new Date(a.created_at)
-//     );
-
-//     // Get the first entry as the baseline
-//     const firstEntry = getFirstEntry(sortedData);
-
-//     return sortedData.reduce((acc, curr) => {
-//         const formattedDateTime = formatDateTime(curr.created_at);
-//         const customer = curr.customer?.name_company || "Unknown Customer";
-//         const jenisBarang =
-//             curr.jenisbarang?.jenis_barang_name || "Unknown Jenis Barang";
-//         const dateKey = formattedDateTime;
-
-//         if (!acc[dateKey]) {
-//             acc[dateKey] = {
-//                 date: dateKey,
-//                 items: [],
-//             };
-//         }
-
-//         // Determine if the current item is new or updated
-//         const isUpdated =
-//             curr.customer?.name_company !== firstEntry.customer ||
-//             curr.jenisbarang?.jenis_barang_name !== firstEntry.jenisBarang ||
-//             curr.satuan?.name_satuan !== firstEntry.satuan ||
-//             curr.harga !== firstEntry.harga ||
-//             curr.harga_modal !== firstEntry.harga_modal;
-
-//         acc[dateKey].items.push({
-//             customer,
-//             jenisBarang,
-//             satuan: curr.satuan?.name_satuan || "Tidak ada Satuan",
-//             harga: curr.harga || "Tidak ada Harga",
-//             harga_modal: curr.harga_modal || "Tidak ada Harga Modal",
-//             isUpdated,
-//         });
-
-//         return acc;
-//     }, {});
-// };
-
-// // Compute the grouped data using the historyData prop
-// const groupedData = computed(() =>
-//     groupByExactDateTimeAndCustomerAndJenis(props.historyData)
-// );
 
 const groupByExactDateTimeAndCustomerAndJenis = (data) => {
     if (!data || !Array.isArray(data)) {
@@ -196,7 +149,30 @@ const groupedData = computed(() => {
                                     />
                                 </div>
                             </div>
-                            <div class="grid grid-cols-3 gap-4 mt-4 rounded-lg">
+                            <div
+                                :class="{
+                                    'grid grid-cols-3 gap-4 mt-4 rounded-lg':
+                                        (matchingUser &&
+                                            matchingUser.roles.includes(
+                                                'superadmin'
+                                            )) ||
+                                        (matchingUser &&
+                                            matchingUser.roles.includes(
+                                                'admin'
+                                            )),
+                                    'grid grid-cols-2 gap-4 mt-4 rounded-lg':
+                                        !(
+                                            matchingUser &&
+                                            matchingUser.roles.includes(
+                                                'superadmin'
+                                            )
+                                        ) &&
+                                        !(
+                                            matchingUser &&
+                                            matchingUser.roles.includes('admin')
+                                        ),
+                                }"
+                            >
                                 <div>
                                     <label for="satuan" class="font-medium"
                                         >Satuan</label
@@ -220,7 +196,19 @@ const groupedData = computed(() => {
                                         disabled
                                     />
                                 </div>
-                                <div>
+
+                                <div
+                                    v-if="
+                                        (matchingUser &&
+                                            matchingUser.roles.includes(
+                                                'superadmin'
+                                            )) ||
+                                        (matchingUser &&
+                                            matchingUser.roles.includes(
+                                                'admin'
+                                            ))
+                                    "
+                                >
                                     <label for="harga_modal" class="font-medium"
                                         >Harga Modal</label
                                     >

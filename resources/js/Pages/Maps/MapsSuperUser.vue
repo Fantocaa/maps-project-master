@@ -1,7 +1,7 @@
 <script>
 import { defineComponent, ref, onMounted } from "vue";
 import { Marker } from "vue3-google-map";
-import $ from "jquery";
+// import $ from "jquery";
 import { Head } from "@inertiajs/vue3";
 import { router } from "@inertiajs/vue3";
 import { Link } from "@inertiajs/vue3";
@@ -36,6 +36,7 @@ export default defineComponent({
         Head,
         Link,
         vSelect,
+        MapHistory,
     },
     props: { auth: Object },
     setup(props) {
@@ -53,6 +54,8 @@ export default defineComponent({
         const jenis_barang = ref([]);
         const matchingUser = ref(null);
         const customerOptions = reactive([]);
+        const showHistory = ref(false);
+        const markerHistory = ref([]);
 
         const getCurrentLocation = () => {
             if (markers.value.length > 0) {
@@ -219,6 +222,26 @@ export default defineComponent({
                 return;
             }
 
+            // Panggil getReverseGeocoding dengan posisi marker yang diklik
+            getReverseGeocoding(
+                clickedMarker.position.lat,
+                clickedMarker.position.lng
+            )
+                .then((addr) => {
+                    if (addr) {
+                        address.value = addr; // Update address dengan alamat yang diterima
+                    }
+                })
+                .catch((error) => console.error(error));
+
+            // Update zoom dan center
+            center.value = clickedMarker.position;
+
+            if (mapInstance.value) {
+                mapInstance.value.setZoom(zoom.value);
+                mapInstance.value.setCenter(center.value);
+            }
+
             const clickedMarkerData = markers.value[index];
 
             if (!clickedMarkerData.id) {
@@ -258,26 +281,6 @@ export default defineComponent({
             }
 
             // console.log(selectedMarker.value);
-
-            // Update zoom dan center
-            center.value = clickedMarker.position;
-
-            if (mapInstance.value) {
-                mapInstance.value.setZoom(zoom.value);
-                mapInstance.value.setCenter(center.value);
-            }
-
-            // Panggil getReverseGeocoding dengan posisi marker yang diklik
-            getReverseGeocoding(
-                clickedMarker.position.lat,
-                clickedMarker.position.lng
-            )
-                .then((addr) => {
-                    if (addr) {
-                        address.value = addr; // Update address dengan alamat yang diterima
-                    }
-                })
-                .catch((error) => console.error(error));
         };
 
         const defineSelectedMarkerValueSatuan = (satuan) => {
@@ -294,6 +297,31 @@ export default defineComponent({
             console.log("Idle event listener added.");
 
             loadMapPosition();
+        };
+
+        const toggleHistory = async () => {
+            if (!showHistory.value) {
+                // Jika showHistory sebelumnya false, maka fetch data history
+                await fetchHistory();
+            }
+            showHistory.value = !showHistory.value;
+        };
+
+        // Fungsi untuk fetch data history
+        const fetchHistory = async () => {
+            try {
+                if (selectedMarker.value) {
+                    const response = await fetch(
+                        `/history/${selectedMarker.value.id}`
+                    );
+                    const data = await response.json();
+                    markerHistory.value = data; // Simpan data history ke markerHistory
+
+                    // console.log(data);
+                }
+            } catch (error) {
+                console.error("Failed to fetch history data:", error);
+            }
         };
 
         const fetchUser = async () => {
@@ -1214,6 +1242,7 @@ export default defineComponent({
                 }
             }
             $("#showmarker").hide();
+            showHistory.value = false;
         };
 
         const closeModal = () => {
@@ -1221,6 +1250,10 @@ export default defineComponent({
             if (dialog) {
                 dialog.close();
             }
+        };
+
+        const handleBack = () => {
+            showHistory.value = false; // Set showHistory to false when the back button is clicked
         };
 
         onMounted(async () => {
@@ -1258,6 +1291,10 @@ export default defineComponent({
         return {
             handleClickRefresh,
             user,
+            handleBack,
+            showHistory,
+            toggleHistory,
+            markerHistory,
             zoom,
             agent,
             validationErrors,
@@ -1468,9 +1505,6 @@ export default defineComponent({
                 <div
                     class="bg-white w-96 md:w-[1024px] lg:w-[512px] xl:w-[660px] h-auto rounded-xl p-6 relative shadow-xl mx-4 md:mx-24"
                 >
-                    <div>
-                        <MapHistory />
-                    </div>
                     <form @submit.prevent="saveFormData">
                         <h1 class="pb-4 w-[90%] px-2">
                             Alamat : {{ address }}
@@ -1921,17 +1955,26 @@ export default defineComponent({
                             Alamat :
                             {{ selectedMarker.lokasi }}
                         </h1>
+                        <h1 class="pb-4 w-[90%] px-2">
+                            Nama Penerima :
+                            {{ selectedMarker.name_penerima }}
+                        </h1>
+                        <h1 class="pb-4 w-[90%] px-2">
+                            Nama Agent :
+                            {{ selectedMarker.name_agent }}
+                        </h1>
+                        <div class="px-2 h-auto" v-if="showHistory">
+                            <MapHistory
+                                :show-history="showHistory"
+                                @back="handleBack"
+                                :history-data="markerHistory"
+                                :matching-user="matchingUser"
+                            />
+                        </div>
                         <div
                             class="max-h-[448px] xl:max-h-[384px] 2xl:max-h-[448px] overflow-auto"
+                            v-else
                         >
-                            <h1 class="pb-4 w-[90%] px-2">
-                                Nama Penerima :
-                                {{ selectedMarker.name_penerima }}
-                            </h1>
-                            <h1 class="pb-4 w-[90%] px-2">
-                                Nama Agent :
-                                {{ selectedMarker.name_agent }}
-                            </h1>
                             <!-- <h1 class="pb-4 w-[90%]">
                                 Nama Customer :
                                 {{ selectedMarker.name_customer }}
@@ -2435,6 +2478,13 @@ export default defineComponent({
                                         class="bg-red-500 text-white py-3 px-4 rounded-md w-full"
                                     >
                                         Delete
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="bg-violet-500 hover:bg-violet-700 text-white py-3 px-4 rounded-md w-full"
+                                        @click="toggleHistory"
+                                    >
+                                        History
                                     </button>
                                 </div>
                                 <div class="mt-8">

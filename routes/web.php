@@ -139,7 +139,6 @@ Route::get('/maps/admin', function () {
 // Route::get('/maps/admin', [MdMapsController::class, 'show'])->name('index.mapsAdmin')
 //     ->middleware(['auth', 'verified', 'role:admin|superadmin'])->name('mapsAdmin');
 
-Route::get('/history/{id}', [MdMapsController::class, 'history'])->middleware(['auth', 'verified', 'role:superadmin|superuser|
-superuser2'])->name('histroy.table');
+Route::get('/history/{id}', [MdMapsController::class, 'history'])->middleware(['auth', 'verified'])->name('histroy.table');
 
 require __DIR__ . '/auth.php';

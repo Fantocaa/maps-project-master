@@ -209,80 +209,6 @@ export default defineComponent({
             }
         };
 
-        // const handleMarkerClick = (clickedMarker) => {
-        //     // Temukan indeks marker yang sesuai
-        //     const index = markers.value.findIndex(
-        //         (marker) =>
-        //             marker.position.lat === clickedMarker.position.lat &&
-        //             marker.position.lng === clickedMarker.position.lng
-        //     );
-
-        //     if (index === -1) {
-        //         console.error("Marker not found");
-        //         return;
-        //     }
-
-        //     const clickedMarkerData = markers.value[index];
-
-        //     if (!clickedMarkerData.id) {
-        //         // Marker tidak memiliki ID, hapus langsung
-        //         markers.value.splice(index, 1);
-        //     } else {
-        //         // Struktur data terbaru dengan multiple customers
-        //         selectedMarker.value = {
-        //             id: clickedMarkerData.id,
-        //             notes: clickedMarker.notes,
-        //             name: clickedMarker.name,
-        //             date: clickedMarker.date,
-        //             lokasi: clickedMarker.lokasi,
-        //             name_company: clickedMarker.name_company,
-        //             name_penerima: clickedMarker.name_penerima,
-        //             name_agent: clickedMarker.name_agent,
-        //             // name_customer: clickedMarker.name_customer,
-        //             customers: clickedMarker.customers.map((customer) => ({
-        //                 name_customer: customer.name_customer,
-        //                 satuan: customer.satuan.map((satuan) => ({
-        //                     name_satuan: satuan.name_satuan,
-        //                     jenis_barang_name: satuan.jenis_barang_name || null,
-        //                     biaya: satuan.biaya.map((biaya) => ({
-        //                         name_biaya: biaya.name_biaya,
-        //                         harga: biaya.harga,
-        //                         harga_modal: biaya.harga_modal,
-        //                         isSaved: true, // Menandakan bahwa data ini sudah disimpan di database
-        //                     })),
-        //                     isSaved: true, // Menandakan bahwa data ini sudah disimpan di database
-        //                 })),
-        //                 isSaved: true, // Menandakan bahwa data ini sudah disimpan di database
-        //             })),
-        //             showForm: true,
-        //         };
-
-        //         $("#showmarker").show();
-        //     }
-
-        //     // console.log(selectedMarker.value);
-
-        //     // Update zoom dan center
-        //     center.value = clickedMarker.position;
-
-        //     if (mapInstance.value) {
-        //         mapInstance.value.setZoom(zoom.value);
-        //         mapInstance.value.setCenter(center.value);
-        //     }
-
-        //     // Panggil getReverseGeocoding dengan posisi marker yang diklik
-        //     getReverseGeocoding(
-        //         clickedMarker.position.lat,
-        //         clickedMarker.position.lng
-        //     )
-        //         .then((addr) => {
-        //             if (addr) {
-        //                 address.value = addr; // Update address dengan alamat yang diterima
-        //             }
-        //         })
-        //         .catch((error) => console.error(error));
-        // };
-
         const handleMarkerClick = async (clickedMarker) => {
             // Temukan indeks marker yang sesuai
             const index = markers.value.findIndex(
@@ -324,14 +250,6 @@ export default defineComponent({
             } else {
                 // Struktur data terbaru dengan multiple customers
                 try {
-                    // const response = await fetch(
-                    //     `/history/${clickedMarkerData.id}`
-                    // );
-                    // const data = await response.json();
-
-                    // Log the fetched history data
-                    // console.log("Fetched history data:", data);
-
                     selectedMarker.value = {
                         id: clickedMarkerData.id,
                         notes: clickedMarker.notes,
@@ -387,7 +305,7 @@ export default defineComponent({
                     const data = await response.json();
                     markerHistory.value = data; // Simpan data history ke markerHistory
 
-                    console.log(data);
+                    // console.log(data);
                 }
             } catch (error) {
                 console.error("Failed to fetch history data:", error);
@@ -1948,6 +1866,7 @@ export default defineComponent({
                                 :show-history="showHistory"
                                 @back="handleBack"
                                 :history-data="markerHistory"
+                                :matching-user="matchingUser"
                             />
                         </div>
                         <div

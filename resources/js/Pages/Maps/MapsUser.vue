@@ -1,7 +1,7 @@
 <script>
 import { defineComponent, ref, onMounted } from "vue";
 import { Marker } from "vue3-google-map";
-import $ from "jquery";
+// import $ from "jquery";
 import { Head } from "@inertiajs/vue3";
 import { router } from "@inertiajs/vue3";
 import { Link } from "@inertiajs/vue3";
@@ -9,6 +9,7 @@ import axios from "axios";
 import vSelect from "vue-select";
 import "vue-select/dist/vue-select.css";
 import { reactive } from "vue";
+import MapHistory from "./History/MapHistory.vue";
 
 export default defineComponent({
     data() {
@@ -35,10 +36,11 @@ export default defineComponent({
         Head,
         Link,
         vSelect,
+        MapHistory,
     },
     props: { auth: Object },
     setup(props) {
-        const center = ref({ lat: 0, lng: 0 });
+        const center = ref({ lat: -7.250445, lng: 112.768845 });
         const markers = ref([]);
         const klikmarker = ref([]);
         const selectedMarker = ref(false);
@@ -54,6 +56,8 @@ export default defineComponent({
         const customerOptions = reactive([]);
         const zoom = ref(7); // Atur level zoom awal
         const isLoading = ref(false); // Tambahkan state loading
+        const showHistory = ref(false);
+        const markerHistory = ref([]);
 
         const getCurrentLocation = () => {
             isLoading.value = true; // Mulai loading
@@ -271,6 +275,31 @@ export default defineComponent({
             console.log("Idle event listener added.");
 
             loadMapPosition();
+        };
+
+        const toggleHistory = async () => {
+            if (!showHistory.value) {
+                // Jika showHistory sebelumnya false, maka fetch data history
+                await fetchHistory();
+            }
+            showHistory.value = !showHistory.value;
+        };
+
+        // Fungsi untuk fetch data history
+        const fetchHistory = async () => {
+            try {
+                if (selectedMarker.value) {
+                    const response = await fetch(
+                        `/history/${selectedMarker.value.id}`
+                    );
+                    const data = await response.json();
+                    markerHistory.value = data; // Simpan data history ke markerHistory
+
+                    // console.log(data);
+                }
+            } catch (error) {
+                console.error("Failed to fetch history data:", error);
+            }
         };
 
         const fetchUser = async () => {
@@ -527,6 +556,7 @@ export default defineComponent({
                 }
             }
             $("#showmarker").hide();
+            showHistory.value = false;
         };
 
         const closeModal = () => {
@@ -534,6 +564,10 @@ export default defineComponent({
             if (dialog) {
                 dialog.close();
             }
+        };
+
+        const handleBack = () => {
+            showHistory.value = false; // Set showHistory to false when the back button is clicked
         };
 
         onMounted(async () => {
@@ -572,12 +606,17 @@ export default defineComponent({
         return {
             handleClickRefresh,
             user,
+            handleBack,
+            showHistory,
+            toggleHistory,
+            markerHistory,
             zoom,
             agent,
             validationErrors,
             center,
             satuan,
             biaya,
+            resetForm,
             apiData,
             logout,
             markers,
@@ -605,7 +644,7 @@ export default defineComponent({
 </script>
 
 <template>
-    <Head title="Maps" />
+    <Head title="Maps User" />
     <div class="mx-auto relative h-full">
         <div
             v-if="isLoading"
@@ -787,17 +826,26 @@ export default defineComponent({
                             Alamat :
                             {{ selectedMarker.lokasi }}
                         </h1>
+                        <h1 class="pb-4 w-[90%] px-2">
+                            Nama Penerima :
+                            {{ selectedMarker.name_penerima }}
+                        </h1>
+                        <h1 class="pb-4 w-[90%] px-2">
+                            Nama Agent :
+                            {{ selectedMarker.name_agent }}
+                        </h1>
+                        <div class="px-2 h-auto" v-if="showHistory">
+                            <MapHistory
+                                :show-history="showHistory"
+                                @back="handleBack"
+                                :history-data="markerHistory"
+                                :matching-user="matchingUser"
+                            />
+                        </div>
                         <div
                             class="max-h-[448px] xl:max-h-[384px] 2xl:max-h-[448px] overflow-auto"
+                            v-else
                         >
-                            <h1 class="pb-4 w-[90%] px-2">
-                                Nama Penerima :
-                                {{ selectedMarker.name_penerima }}
-                            </h1>
-                            <h1 class="pb-4 w-[90%] px-2">
-                                Nama Agent :
-                                {{ selectedMarker.name_agent }}
-                            </h1>
                             <!-- <h1 class="pb-4 w-[90%]">
                                 Nama Customer :
                                 {{ selectedMarker.name_customer }}
@@ -1081,7 +1129,7 @@ export default defineComponent({
                                         </div>
                                     </div>
                                 </div>
-                                <div class="">
+                                <div>
                                     <label for="notes">Catatan:</label>
                                     <textarea
                                         id="notes"
@@ -1100,6 +1148,17 @@ export default defineComponent({
                                                 : ""
                                         }}</textarea
                                     >
+                                </div>
+                                <div
+                                    class="flex lg:flex-row gap-2 justify-center"
+                                >
+                                    <button
+                                        type="button"
+                                        class="bg-violet-500 hover:bg-violet-700 text-white py-3 px-4 rounded-md w-full"
+                                        @click="toggleHistory"
+                                    >
+                                        History
+                                    </button>
                                 </div>
 
                                 <div class="mt-8">
