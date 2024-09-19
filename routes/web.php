@@ -7,9 +7,7 @@ use App\Http\Controllers\MdCompanyController;
 use App\Http\Controllers\MdJenisBarangController;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Foundation\Application;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\RegisterUserController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\MdMapsController;
 use App\Http\Controllers\MdSatuanController;
@@ -135,9 +133,6 @@ Route::get('/maps/superuser', function () {
 Route::get('/maps/admin', function () {
     return Inertia::render('Maps/MapsAdmin');
 })->middleware(['auth', 'verified', 'role:admin|superadmin'])->name('mapsAdmin');
-
-// Route::get('/maps/admin', [MdMapsController::class, 'show'])->name('index.mapsAdmin')
-//     ->middleware(['auth', 'verified', 'role:admin|superadmin'])->name('mapsAdmin');
 
 Route::get('/history/{id}', [MdMapsController::class, 'history'])->middleware(['auth', 'verified'])->name('histroy.table');
 

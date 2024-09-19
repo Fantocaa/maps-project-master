@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Exports\MapsbyidExport;
 use App\Exports\MapsExport;
 use App\Http\Requests\Storemd_mapsRequest;
 use App\Http\Requests\Updatemd_mapsRequest;
@@ -18,10 +17,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Maatwebsite\Excel\Facades\Excel;
-use Inertia\Response;
 use Inertia\Inertia;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Redirect;
 
 class MdMapsController extends Controller
 {
