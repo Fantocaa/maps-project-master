@@ -1431,10 +1431,10 @@ export default defineComponent({
             <!-- Add new Marker -->
             <div
                 v-show="markers.length && markers[markers.length - 1].showForm"
-                class="absolute z-10 inset-0 flex items-center justify-center 2xl:pl-[40%] text-xs pt-[86px] md:pt-24 lg:pt-8"
+                class="absolute z-10 inset-0 flex items-center justify-center 2xl:pl-[40%] text-xs pt-[86px] md:pt-24 lg:pt-8 2xl:pt-0"
             >
                 <div
-                    class="bg-white w-96 md:w-[1024px] lg:w-[512px] xl:w-[800px] 2xl:w-[720px] h-auto rounded-xl p-6 relative shadow-xl mx-4 md:mx-24"
+                    class="bg-white w-96 md:w-[1024px] lg:w-[512px] xl:w-[800px] 2xl:w-[720px] h-auto rounded-xl p-6 relative shadow-xl mx-4 md:mx-24 2xl:ml-48"
                 >
                     <h1 class="pb-4 w-[90%] px-2">Alamat : {{ address }}</h1>
 
@@ -1845,7 +1845,7 @@ export default defineComponent({
                 style="display: none"
             >
                 <div
-                    class="bg-white w-full lg:w-[512px] xl:w-[800px] 2xl:w-[720px] lg:h-[80%] 2xl:h-auto max-h-[1024px] rounded-xl p-6 relative shadow-xl mx-4 md:mx-24 2xl:ml-48"
+                    class="bg-white w-full lg:w-[512px] xl:w-[800px] 2xl:w-[720px] lg:h-auto max-h-[1024px] rounded-xl p-6 relative shadow-xl mx-4 md:mx-24 2xl:ml-48"
                 >
                     <form @submit.prevent="editSaveFormData">
                         <!-- <div class="overflow-y-scroll max-h-[448px]"> -->
