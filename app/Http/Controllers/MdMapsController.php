@@ -346,8 +346,12 @@ class MdMapsController extends Controller
         return response()->json(['address' => null], 404);
     }
 
-    public function export()
+    public function export(Request $request)
     {
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
+
+        // Query data dengan filter berdasarkan range tanggal
         $maps = md_maps::join('md_agents', 'md_maps.id_agent', '=', 'md_agents.id')
             ->join('md_companies', 'md_maps.id_perusahaan', '=', 'md_companies.id')
             ->select(
@@ -355,19 +359,18 @@ class MdMapsController extends Controller
                 'md_agents.name_agent as name_agent',
                 'md_companies.name_company as name_company'
             )
+            ->whereBetween('md_maps.created_at', [$startDate, $endDate])
             ->get();
 
         foreach ($maps as $map) {
-            // Temukan semua pelanggan yang terkait dengan map
             $customers = md_company::join('md_biayas', 'md_biayas.id_customer', '=', 'md_companies.id')
-                ->whereNull('md_biayas.deleted_at') // Filter untuk tidak termasuk data yang soft deleted
+                ->whereNull('md_biayas.deleted_at')
                 ->where('md_biayas.id_maps', $map->id)
                 ->select('md_companies.id as customer_id', 'md_companies.name_company as name_customer')
                 ->distinct()
                 ->get();
 
             $map->customers = $customers->map(function ($customer) use ($map) {
-                // Temukan semua satuan yang terkait dengan pelanggan dan map ini
                 $satuans = md_satuan::whereHas('biaya', function ($query) use ($map, $customer) {
                     $query->where('id_maps', $map->id)
                         ->where('id_customer', $customer->customer_id);
